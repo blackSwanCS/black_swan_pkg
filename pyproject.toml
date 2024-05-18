@@ -1,5 +1,5 @@
 [project]
-name = "HIggsML_black_swan"
+name = "HiggsML"
 version = "0.0.1"
 authors = [
   { name="Ragansu Chakkappai", email="ragansu@gamil.com" },
