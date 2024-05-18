@@ -60,7 +60,7 @@ class Ingestion:
 
     def init_submission(self, Model):
         print("[*] Initializing Submmited Model")
-        from systematics import systematics
+        from HiggsML.systematics import systematics
 
         self.model = Model(get_train_set=self.load_train_set(), systematics=systematics)
         self.data.delete_train_set()

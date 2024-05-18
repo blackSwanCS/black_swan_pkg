@@ -165,12 +165,14 @@ class Data:
 
 
 current_path = os.path.dirname(os.path.realpath(__file__))
-parent_path = os.path.dirname(current_path)
 
 
 def Neurips2024_public_dataset():
 
-    file_read_loc = os.path.join(parent_path, "public_data")
+    file_read_loc = os.path.join(current_path, "public_data")
+    if not os.path.isdir(file_read_loc):
+        os.mkdir(file_read_loc)
+        
     file = "public_data.zip"
     if file not in os.listdir(file_read_loc):
         subprocess.run(
@@ -178,15 +180,15 @@ def Neurips2024_public_dataset():
                 "wget",
                 "-O",
                 os.path.join(file_read_loc, "public_data.zip"),
-                "https://codalab.coresearch.club/my/datasets/download/0e2d7e8e-1b8b-4b3f-8b8b-3b3c5d4e4e3d",
+                "https://www.codabench.org/datasets/download/c3b5c664-2f7e-4e81-8975-7926dae44703/",
             ]
         )
 
-    if "input_data" not in os.listdir(file_read_loc):
+    if "public_data" not in os.listdir(file_read_loc):
         subprocess.run(
             ["unzip", os.path.join(file_read_loc, file), "-d", file_read_loc]
         )
 
     return Data(
-        os.path.join(parent_path, "public_data", "input_data"), data_format="parquet"
+        os.path.join(current_path, "public_data", "input_data"), data_format="parquet"
     )

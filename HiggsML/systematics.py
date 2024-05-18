@@ -64,7 +64,6 @@ __author__ = "David Rousseau, and Victor Estrade "
 import copy
 import pandas as pd
 import numpy as np
-from derived_quantities import DER_data
 
 
 # ==================================================================================
@@ -558,12 +557,11 @@ def systematics(
         seed=seed,
     )
 
-    df = DER_data(data)
     for key in data_set.keys():
         if key is not "data":
-            df[key] = data_set[key]
+            data[key] = data_set[key]
 
-    data_syst = postprocess(df)
+    data_syst = postprocess(data)
 
     data_syst_set = {}
     for key in data_set.keys():
