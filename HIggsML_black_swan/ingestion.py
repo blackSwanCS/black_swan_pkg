@@ -167,6 +167,7 @@ class Ingestion:
                 f.write(json.dumps(self.results_dict[key], indent=4))
 
 
+
 if __name__ == "__main__":
 
     print("############################################")
@@ -176,13 +177,8 @@ if __name__ == "__main__":
     # Init Ingestion
     ingestion = Ingestion()
 
-    ingestion.set_directories()
-
     # Start timer
     ingestion.start_timer()
-
-    # load train set
-    ingestion.load_train_set()
 
     # initialize submission
     ingestion.init_submission()
