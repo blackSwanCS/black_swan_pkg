@@ -130,7 +130,7 @@ class Data:
         bkg_scale=None,
         seed=42,
     ):
-        from systematics import get_bootstraped_dataset, get_systematics_dataset
+        from HiggsML.systematics import get_bootstraped_dataset, get_systematics_dataset
 
         # get bootstrapped dataset from the original test set
         pesudo_exp_data = get_bootstraped_dataset(
@@ -158,7 +158,7 @@ class Data:
     def get_syst_train_set(
         self, tes=1.0, jes=1.0, soft_met=1.0, w_scale=None, bkg_scale=None
     ):
-        from systematics import systematics
+        from HiggsML.systematics import systematics
 
         if self.__train_set is None:
             self.load_train_set()

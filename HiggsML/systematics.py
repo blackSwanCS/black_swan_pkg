@@ -604,7 +604,6 @@ def get_bootstraped_dataset(
         temp = (test_set[key].sample(
             n=bkg_norm[key], replace=True, random_state=seed
         ))
-        print(f" for set {key} lenth = {len(temp)}" )
         pseudo_data.append(temp)
               
 

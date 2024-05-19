@@ -131,7 +131,7 @@ class Ingestion:
             predicted_dict["test_set_index"] = test_set_index
 
             print(
-                f"[*] - mu_hat: {predicted_dict['mu_hat']} - delta_mu_hat: {predicted_dict['delta_mu_hat']} - p16: {predicted_dict['p16']} - p84: {predicted_dict['p84']}"
+                f"[*] - mu_hat: {predicted_dict['mu_hat']} - del_mu_tot: {predicted_dict['del_mu_tot']} - del_mu_stat: {predicted_dict['del_mu_stat']} - del_mu_sys: {predicted_dict['del_mu_sys']}"
             )
 
             if set_index not in self.results_dict:
@@ -145,18 +145,20 @@ class Ingestion:
         for key in self.results_dict.keys():
             set_result = self.results_dict[key]
             set_result.sort(key=lambda x: x["test_set_index"])
-            mu_hats, delta_mu_hats, p16, p84 = [], [], [], []
+            mu_hats, del_mu_tots, del_mu_stats, del_mu_syss = [], [], [], []
             for test_set_dict in set_result:
                 mu_hats.append(test_set_dict["mu_hat"])
-                delta_mu_hats.append(test_set_dict["delta_mu_hat"])
-                p16.append(test_set_dict["p16"])
-                p84.append(test_set_dict["p84"])
+                del_mu_tots.append(test_set_dict["del_mu_tot"])
+                del_mu_stats.append(test_set_dict["del_mu_stat"])
+                del_mu_syss.append(test_set_dict["del_mu_sys"])
+
+
 
             ingestion_result_dict = {
                 "mu_hats": mu_hats,
-                "delta_mu_hats": delta_mu_hats,
-                "p16": p16,
-                "p84": p84,
+                "del_mu_stats": del_mu_stats,
+                "del_mu_syss": del_mu_syss,
+                "del_mu_tots": del_mu_tots,
             }
             self.results_dict[key] = ingestion_result_dict
 
