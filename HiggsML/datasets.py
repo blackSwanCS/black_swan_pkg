@@ -4,6 +4,7 @@ import pandas as pd
 import json
 import os
 import subprocess
+import wget
 
 
 test_set_settings = None
@@ -163,28 +164,22 @@ class Data:
             self.load_train_set()
         return systematics(self.__train_set, tes, jes, soft_met, w_scale, bkg_scale)
 
-
-current_path = os.path.dirname(os.path.realpath(__file__))
-
+current_path = os.getcwd()
 
 def Neurips2024_public_dataset():
 
     file_read_loc = os.path.join(current_path, "public_data")
     if not os.path.isdir(file_read_loc):
         os.mkdir(file_read_loc)
-        
+
     file = "public_data.zip"
     if file not in os.listdir(file_read_loc):
-        subprocess.run(
-            [
-                "wget",
-                "-O",
-                os.path.join(file_read_loc, "public_data.zip"),
-                "https://www.codabench.org/datasets/download/c3b5c664-2f7e-4e81-8975-7926dae44703/",
-            ]
+        wget.download(
+            "https://www.codabench.org/datasets/download/c3b5c664-2f7e-4e81-8975-7926dae44703/",
+            out=os.path.join(file_read_loc, "public_data.zip"),
         )
 
-    if "public_data" not in os.listdir(file_read_loc):
+    if "input_data" not in os.listdir(file_read_loc):
         subprocess.run(
             ["unzip", os.path.join(file_read_loc, file), "-d", file_read_loc]
         )
