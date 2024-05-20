@@ -1,4 +1,3 @@
-from frozendict import frozendict
 import numpy as np
 import pandas as pd
 import json
@@ -58,25 +57,23 @@ class Data:
             train_detailed_labels = f.read().splitlines()
 
         if self.data_format == "parquet":
-            self.__train_set = frozendict(
-                {
+            self.__train_set = {
                     "data": pd.read_parquet(train_data_file, engine="pyarrow"),
                     "labels": train_labels,
                     "settings": train_settings,
                     "weights": train_weights,
                     "detailed_labels": train_detailed_labels,
                 }
-            )
+            
         else:
-            self.__train_set = frozendict(
-                {
+            self.__train_set = {
                     "data": pd.read_csv(train_data_file),
                     "labels": train_labels,
                     "settings": train_settings,
                     "weights": train_weights,
                     "detailed_labels": train_detailed_labels,
                 }
-            )
+            
 
         del train_labels, train_settings, train_weights, train_detailed_labels
 
@@ -175,7 +172,7 @@ def Neurips2024_public_dataset():
     file = "public_data.zip"
     if file not in os.listdir(file_read_loc):
         wget.download(
-            "https://www.codabench.org/datasets/download/c3b5c664-2f7e-4e81-8975-7926dae44703/",
+            "https://www.codabench.org/datasets/download/8fa63d64-8110-4ee5-9722-9d5ec8e3c3d8/",
             out=os.path.join(file_read_loc, "public_data.zip"),
         )
 
