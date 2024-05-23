@@ -46,7 +46,6 @@ class Dataset_visualise:
         display(self.dfall.describe())
 
     def histogram_dataset(self, columns=None):
-        fig = plt.figure()
         if columns == None:
             columns = self.columns
         sns.set_theme(rc={"figure.figsize": (40, 40)}, style="whitegrid")
@@ -77,7 +76,9 @@ class Dataset_visualise:
             label="S",
         )
 
-        plt.legend(loc="best")
+        for i in range(len(ax)):
+            ax[i].set_title(columns[i])
+            ax[i].legend(["Background", "Signal"])
         plt.title("Histograms of features in" + self.name)
         plt.show()
 
@@ -133,7 +134,7 @@ class Dataset_visualise:
         plt.show()
         plt.close()
 
-    def stacked_histogram(self, field_name, mu_hat=1.0, bins=30, detailedlabel=None):
+    def stacked_histogram(self, field_name, mu_hat=1.0, bins=30):
         field = self.dfall[field_name]
         sns.set_theme(rc={"figure.figsize": (8, 7)}, style="whitegrid")
 
