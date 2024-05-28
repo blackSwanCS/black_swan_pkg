@@ -97,7 +97,6 @@ class Data:
 
         test_set = {
             "ztautau": pd.DataFrame(),
-            "wjets": pd.DataFrame(),
             "diboson": pd.DataFrame(),
             "ttbar": pd.DataFrame(),
             "htautau": pd.DataFrame(),
@@ -185,7 +184,7 @@ def train_test_split(data_set, test_size=0.2, random_state=42, reweight=False):
 
     test_set["data"] = data.iloc[random_index]
     train_set["data"] = data.iloc[remaining_index]
-        
+
     if reweight is True:
         signal_weight = np.sum(data_set["weights"][data_set["labels"] == 1])
         background_weight = np.sum(data_set["weights"][data_set["labels"] == 0])
@@ -208,9 +207,28 @@ def train_test_split(data_set, test_size=0.2, random_state=42, reweight=False):
             test_set["labels"] == 0
         ] * (background_weight / background_weight_test)
 
-    
     return train_set, test_set
 
+
+def reweight(data_set):
+
+    from HiggsML.systematics import LHC_NUMBERS
+
+    for key in LHC_NUMBERS.keys():
+        detailed_label = np.array(data_set["detailed_labels"])
+        weight_key = np.sum(data_set["weights"][detailed_label == key])
+        data_set["weights"][detailed_label == key] = data_set["weights"][
+            detailed_label == key
+        ] * (LHC_NUMBERS[key] / weight_key)
+
+        print(f"Reweighting {key} with {LHC_NUMBERS[key] / weight_key}")
+        print(
+            f"New weight for {key} is {np.sum(data_set['weights'][detailed_label == key])}"
+        )
+    return data_set
+
+
+# Datasets
 
 
 def Neurips2024_public_dataset():
@@ -223,6 +241,31 @@ def Neurips2024_public_dataset():
     if file not in os.listdir(file_read_loc):
         wget.download(
             "https://www.codabench.org/datasets/download/2af33dff-7283-4256-8eda-2190a477c9ca/",
+            out=os.path.join(file_read_loc, "public_data.zip"),
+        )
+
+    if "input_data" not in os.listdir(file_read_loc):
+        subprocess.run(
+            ["unzip", os.path.join(file_read_loc, file), "-d", file_read_loc]
+        )
+
+    return Data(
+        os.path.join(current_path, "public_data", "input_data"), data_format="parquet"
+    )
+
+    # 71501d1e-3e41-4c63-8094-8ac657728fda
+
+
+def BlackSwan_public_dataset():
+    current_path = os.getcwd()
+    file_read_loc = os.path.join(current_path, "public_data")
+    if not os.path.isdir(file_read_loc):
+        os.mkdir(file_read_loc)
+
+    file = "public_data.zip"
+    if file not in os.listdir(file_read_loc):
+        wget.download(
+            "https://www.codabench.org/datasets/download/a22b4d16-2cb6-4070-b10e-5778f4a9a365/",
             out=os.path.join(file_read_loc, "public_data.zip"),
         )
 
