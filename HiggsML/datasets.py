@@ -222,7 +222,7 @@ def Neurips2024_public_dataset():
     file = "public_data.zip"
     if file not in os.listdir(file_read_loc):
         wget.download(
-            "https://www.codabench.org/datasets/download/8fa63d64-8110-4ee5-9722-9d5ec8e3c3d8/",
+            "https://www.codabench.org/datasets/download/2af33dff-7283-4256-8eda-2190a477c9ca/",
             out=os.path.join(file_read_loc, "public_data.zip"),
         )
 
