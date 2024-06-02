@@ -59,7 +59,7 @@ class Scoring:
 
         print("[✔]")
 
-    def load_ingestion_results(self, prediction_dir = "./"):
+    def load_ingestion_results(self, prediction_dir = "./",score_dir = "./"):
         print("[*] Reading predictions")
         self.ingestion_results = []
         # loop over sets (1 set = 1 value of mu)
@@ -69,8 +69,8 @@ class Scoring:
                 with open(results_file) as f:
                     self.ingestion_results.append(json.load(f))
         
-        self.score_file = os.path.join(prediction_dir, "scores.json")
-        self.html_file = os.path.join(prediction_dir, "detailed_results.html")
+        self.score_file = os.path.join(score_dir, "scores.json")
+        self.html_file = os.path.join(score_dir, "detailed_results.html")
 
         print("[✔]")
 
@@ -80,8 +80,6 @@ class Scoring:
         # loop over ingestion results
         rmses, maes = [], []
         all_p16s, all_p84s, all_mus = [], [], []
-        print("[*] ",self.ingestion_results)
-        print("[*] ",test_settings["ground_truth_mus"])
 
         for i in range(len(self.ingestion_results)):
             ingestion_result = self.ingestion_results[i]

@@ -572,7 +572,7 @@ def systematics(
     return data_syst_set
 
 LHC_NUMBERS = {
-    "ztautau": 823327,
+    "ztautau": 3544019,
     "diboson": 40590,
     "ttbar": 158761,
     "htautau": 3639,

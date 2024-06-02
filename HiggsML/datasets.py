@@ -240,7 +240,7 @@ def Neurips2024_public_dataset():
     file = "public_data.zip"
     if file not in os.listdir(file_read_loc):
         wget.download(
-            "https://www.codabench.org/datasets/download/2af33dff-7283-4256-8eda-2190a477c9ca/",
+            "https://www.codabench.org/datasets/download/7c48062b-6500-4d9e-a899-9f1913ebb5ff/",
             out=os.path.join(file_read_loc, "public_data.zip"),
         )
 
@@ -265,7 +265,7 @@ def BlackSwan_public_dataset():
     file = "public_data.zip"
     if file not in os.listdir(file_read_loc):
         wget.download(
-            "https://www.codabench.org/datasets/download/a22b4d16-2cb6-4070-b10e-5778f4a9a365/",
+            "https://www.codabench.org/datasets/download/7c48062b-6500-4d9e-a899-9f1913ebb5ff/",
             out=os.path.join(file_read_loc, "public_data.zip"),
         )
 
