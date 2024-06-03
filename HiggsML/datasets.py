@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 import json
 import os
-import subprocess
-import wget
-
+import requests
+from zipfile import ZipFile
+from pathlib import Path
 
 test_set_settings = None
 
@@ -232,48 +232,48 @@ def reweight(data_set):
 
 
 def Neurips2024_public_dataset():
-    current_path = os.getcwd()
-    file_read_loc = os.path.join(current_path, "public_data")
-    if not os.path.isdir(file_read_loc):
-        os.mkdir(file_read_loc)
+    current_path = Path.cwd()
+    file_read_loc = current_path / "public_data"
+    if not file_read_loc.exists():
+        file_read_loc.mkdir()
 
-    file = "public_data.zip"
-    if file not in os.listdir(file_read_loc):
-        wget.download(
-            "https://www.codabench.org/datasets/download/58117a6d-af3a-4aa2-8e3d-f2848ea6db8b/",
-            out=os.path.join(file_read_loc, "public_data.zip"),
-        )
+    url = "https://www.codabench.org/datasets/download/58117a6d-af3a-4aa2-8e3d-f2848ea6db8b/"
+    file = file_read_loc / "public_data.zip"
+    chunk_size = 1024 * 1024
+    if not file.exists():
+        with requests.get(url, stream=True) as r:
+            r.raise_for_status()
+            with file.open("wb") as f:
+                for chunk in r.iter_content(chunk_size=chunk_size):
+                    f.write(chunk)
 
-    if "input_data" not in os.listdir(file_read_loc):
-        subprocess.run(
-            ["unzip", os.path.join(file_read_loc, file), "-d", file_read_loc]
-        )
+    input_data = file_read_loc / "input_data"
+    if not input_data.exists():
+        with ZipFile(file) as zip:
+            zip.extractall(path=file_read_loc)
 
-    return Data(
-        os.path.join(current_path, "public_data", "input_data"), data_format="parquet"
-    )
-
-    # 71501d1e-3e41-4c63-8094-8ac657728fda
+    return Data(str(current_path / "public_data" / "input_data"), data_format="parquet")
 
 
 def BlackSwan_public_dataset():
-    current_path = os.getcwd()
-    file_read_loc = os.path.join(current_path, "public_data")
-    if not os.path.isdir(file_read_loc):
-        os.mkdir(file_read_loc)
+    current_path = Path.cwd()
+    file_read_loc = current_path / "public_data"
+    if not file_read_loc.exists():
+        file_read_loc.mkdir()
 
-    file = "public_data.zip"
-    if file not in os.listdir(file_read_loc):
-        wget.download(
-            "https://www.codabench.org/datasets/download/58117a6d-af3a-4aa2-8e3d-f2848ea6db8b/",
-            out=os.path.join(file_read_loc, "public_data.zip"),
-        )
+    url = "https://www.codabench.org/datasets/download/58117a6d-af3a-4aa2-8e3d-f2848ea6db8b/"
+    file = file_read_loc / "public_data.zip"
+    chunk_size = 1024 * 1024
+    if not file.exists():
+        with requests.get(url, stream=True) as r:
+            r.raise_for_status()
+            with file.open("wb") as f:
+                for chunk in r.iter_content(chunk_size=chunk_size):
+                    f.write(chunk)
 
-    if "input_data" not in os.listdir(file_read_loc):
-        subprocess.run(
-            ["unzip", os.path.join(file_read_loc, file), "-d", file_read_loc]
-        )
+    input_data = file_read_loc / "input_data"
+    if not input_data.exists():
+        with ZipFile(file) as zip:
+            zip.extractall(path=file_read_loc)
 
-    return Data(
-        os.path.join(current_path, "public_data", "input_data"), data_format="parquet"
-    )
+    return Data(str(current_path / "public_data" / "input_data"), data_format="parquet")
