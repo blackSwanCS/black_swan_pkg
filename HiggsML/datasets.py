@@ -177,7 +177,7 @@ def train_test_split(data_set, test_size=0.2, random_state=42, reweight=False):
     remaining_index = np.setdiff1d(np.arange(full_size), random_index)
 
     for key in data_set.keys():
-        if (key != "data") or (key != "settings"):
+        if (key != "data") and (key != "settings"):
             array = np.array(data_set[key])
             test_set[key] = array[random_index]
             train_set[key] = array[remaining_index]
@@ -261,7 +261,8 @@ def BlackSwan_public_dataset():
     if not file_read_loc.exists():
         file_read_loc.mkdir()
 
-    url = "https://www.codabench.org/datasets/download/58117a6d-af3a-4aa2-8e3d-f2848ea6db8b/"
+    url = "https://www.codabench.org/datasets/download/37b5a9f9-6b5b-47bd-a0c7-ab10129cd457/"
+
     file = file_read_loc / "public_data.zip"
     chunk_size = 1024 * 1024
     if not file.exists():
