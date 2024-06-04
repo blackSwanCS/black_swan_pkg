@@ -1,6 +1,6 @@
 [project]
 name = "HiggsML"
-version = "0.0.10"
+version = "0.0.0"
 authors = [
   { name="Ragansu Chakkappai", email="ragansu.chakkappai@universite-paris-saclay.fr"},
   { name="David Rousseau", email="david.rousseau@uijclab.in2p3.fr" },
