@@ -290,7 +290,7 @@ def w_bkg_weight_norm(weights, detailedlabel, systBkgNorm):
 
     """
     # scale the weight, arbitrary but reasonable value
-    weights = (weights * systBkgNorm).where((detailedlabel == "wjets"), other=weights)
+    weights = weights[detailedlabel == "wjets"]
     return weights
 
 
@@ -305,7 +305,8 @@ def all_bkg_weight_norm(weights, label, systBkgNorm):
 
     """
     # scale the weight, arbitrary but reasonable value
-    weights = (weights * systBkgNorm).where(label == 0, other=weights)
+    weights[label == 0] = weights[label == 0] * systBkgNorm
+    
     return weights
 
 
@@ -509,7 +510,7 @@ def systematics(
     data_set=None,
     tes=1.0,
     jes=1.0,
-    soft_met=1.0,
+    soft_met=0.0,
     seed=31415,
     w_scale=None,
     bkg_scale=None,
@@ -544,7 +545,7 @@ def systematics(
         if "weights" in data_set.keys():
             print("All bkg weight rescaling :", bkg_scale)
             data_set["weights"] = all_bkg_weight_norm(
-                data_set["weights"], data_set["label"], bkg_scale
+                data_set["weights"], data_set["labels"], bkg_scale
             )
 
     if verbose > 0:
