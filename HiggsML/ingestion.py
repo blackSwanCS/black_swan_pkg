@@ -98,7 +98,7 @@ class Ingestion:
             else:
                 jes = 1.0
             if dict_systematics["soft_met"]:
-                soft_met = np.random.uniform(1.0, 5)
+                soft_met = np.random.uniform(0.0, 5)
             else:
                 soft_met = 1.0
 

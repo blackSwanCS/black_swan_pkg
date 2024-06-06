@@ -165,6 +165,9 @@ def train_test_split(data_set, test_size=0.2, random_state=42, reweight=False):
     train_set = {}
     test_set = {}
     full_size = len(data)
+    
+    print(f"Full size of the data is {full_size}")
+    
     np.random.seed(random_state)
     if isinstance(test_size, float):
         test_number = int(test_size * full_size)
@@ -174,8 +177,13 @@ def train_test_split(data_set, test_size=0.2, random_state=42, reweight=False):
     else:
         raise ValueError("test_size should be either float or int")
 
-    remaining_index = np.setdiff1d(np.arange(full_size), random_index)
-
+    full_range = data.index
+    remaining_index = full_range[np.isin(full_range, random_index, invert=True)]
+    remaining_index = np.array(remaining_index)
+    
+    print(f"Train size is {len(remaining_index)}")
+    print(f"Test size is {len(random_index)}")
+    
     for key in data_set.keys():
         if (key != "data") and (key != "settings"):
             array = np.array(data_set[key])
