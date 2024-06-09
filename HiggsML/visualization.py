@@ -8,6 +8,32 @@ from sklearn.metrics import roc_auc_score
 
 
 class Dataset_visualise:
+    """
+    A class for visualizing datasets.
+
+    Parameters:
+    - data_set (dict): The dataset containing the data, labels, weights, and detailed labels.
+    - name (str): The name of the dataset (default: "dataset").
+    - columns (list): The list of column names to consider (default: None, which includes all columns).
+
+    Attributes:
+    - dfall (DataFrame): The dataset.
+    - target (Series): The labels.
+    - weights (Series): The weights.
+    - detailed_label (ndarray): The detailed labels.
+    - columns (list): The list of column names.
+    - name (str): The name of the dataset.
+    - keys (ndarray): The unique detailed labels.
+    - weight_keys (dict): The weights for each detailed label.
+
+    Methods:
+    - examine_dataset(): Prints information about the dataset.
+    - histogram_dataset(columns=None): Plots histograms of the dataset features.
+    - correlation_plots(columns=None): Plots correlation matrices of the dataset features.
+    - pair_plots(sample_size=10, columns=None): Plots pair plots of the dataset features.
+    - stacked_histogram(field_name, mu_hat=1.0, bins=30): Plots a stacked histogram of a specific field in the dataset.
+    - pair_plots_syst(df_syst, sample_size=10): Plots pair plots between the dataset and a system dataset.
+    """
 
     def __init__(self, data_set, name="dataset", columns=None):
         self.dfall = data_set["data"]
@@ -25,6 +51,9 @@ class Dataset_visualise:
             self.weight_keys[key] = self.weights[self.detailed_label == key]
 
     def examine_dataset(self):
+        """
+        Prints information about the dataset.
+        """
         print(f"[*] --- Dataset name : {self.name}")
         print(f"[*] --- Number of events : {self.dfall.shape[0]}")
         print(f"[*] --- Number of features : {self.dfall.shape[1]}")
@@ -46,6 +75,16 @@ class Dataset_visualise:
         display(self.dfall.describe())
 
     def histogram_dataset(self, columns=None):
+        """
+        Plots histograms of the dataset features.
+        
+        .. image:: images/histogram_datasets.png
+        :width: 400
+        
+
+        Parameters:
+        - columns (list): The list of column names to consider (default: None, which includes all columns).
+        """
         if columns == None:
             columns = self.columns
         sns.set_theme(rc={"figure.figsize": (40, 40)}, style="whitegrid")
@@ -83,6 +122,12 @@ class Dataset_visualise:
         plt.show()
 
     def correlation_plots(self, columns=None):
+        """
+        Plots correlation matrices of the dataset features.
+
+        Parameters:
+        - columns (list): The list of column names to consider (default: None, which includes all columns).
+        """
         caption = ["Signal feature", "Background feature"]
         if columns == None:
             columns = self.columns
@@ -99,6 +144,13 @@ class Dataset_visualise:
             plt.show()
 
     def pair_plots(self, sample_size=10, columns=None):
+        """
+        Plots pair plots of the dataset features.
+
+        Parameters:
+        - sample_size (int): The number of samples to consider (default: 10).
+        - columns (list): The list of column names to consider (default: None, which includes all columns).
+        """
         if columns == None:
             columns = self.columns
         df_sample = self.dfall[columns].copy()
@@ -135,6 +187,17 @@ class Dataset_visualise:
         plt.close()
 
     def stacked_histogram(self, field_name, mu_hat=1.0, bins=30):
+        """
+        Plots a stacked histogram of a specific field in the dataset.
+
+        .. image:: images/stacked_histogram.png
+        :width: 400
+
+        Parameters:
+        - field_name (str): The name of the field to plot.
+        - mu_hat (float): The value of mu (default: 1.0).
+        - bins (int): The number of bins for the histogram (default: 30).
+        """
         field = self.dfall[field_name]
         sns.set_theme(rc={"figure.figsize": (8, 7)}, style="whitegrid")
 
@@ -153,7 +216,7 @@ class Dataset_visualise:
         )
 
         hist_bkg = hist_b.copy()
-        
+
         higgs = "htautau"
 
         for key in self.keys:
@@ -193,69 +256,75 @@ class Dataset_visualise:
         plt.ylabel("Weighted count")
         plt.show()
 
-    def pair_plots_syst(self, df_syst, sample_size=10):
-        df_sample = self.dfall[self.columns].copy()
-        df_sample_syst = df_syst[self.columns].copy()
 
-        df_sample = df_sample.sample(n=sample_size)
-        df_sample["syst"] = False
+def histgram_compare(
+    data_set1, data_set2, field_name, bins=30, plot_label=["data_set1", "data_set2"]
+):
+    """Compare the histograms of two data sets based on a given field.
 
-        df_sample_syst = df_sample_syst.sample(n=sample_size)
-        df_sample_syst["syst"] = True
+    This function plots and compares the histograms of two data sets based on a specified field.
+    It uses the seaborn and matplotlib libraries for visualization.
 
-        frames = [df_sample, df_sample_syst]
-        del df_sample
-        df_sample = pd.concat(frames)
+    .. image:: images/histogram_compare.png
+    :width: 400
 
-        sns.set_theme(rc={"figure.figsize": (16, 14)}, style="whitegrid")
+    Args:
+        data_set1 (dict): The first data set containing the field of interest.
+        data_set2 (dict): The second data set containing the field of interest.
+        field_name (str): The name of the field to compare.
+        bins (int, optional): The number of bins to use for the histogram. Defaults to 30.
+        plot_label (list, optional): The labels for the two data sets in the plot legend. Defaults to ["data_set1", "data_set2"].
 
-        ax = sns.PairGrid(df_sample, hue="syst")
-        ax.map_upper(sns.scatterplot, alpha=0.5, size=0.3)
-        ax.map_lower(
-            sns.kdeplot, fill=True, levels=5, alpha=0.5
-        )  # Change alpha value here
-        ax.map_diag(
-            sns.histplot,
-            alpha=0.3,
-            bins=25,
-        )  # Change alpha value here
-        ax.add_legend(title="Legend", labels=["syst", "no_syst"], fontsize=12)
+    Returns:
+        None
+    """
 
-        ax.figure.suptitle("Pair plots of features between syst and no_syst")
-        plt.show()
-        plt.close()
-
-
-def Z_curve(score, labels, weights):  ## work in progress
-
-    plt.figure()
+    field_1 = data_set1["data"][field_name]
+    field_2 = data_set2["data"][field_name]
 
     sns.set_theme(rc={"figure.figsize": (8, 7)}, style="whitegrid")
 
-    thresholds_list = np.linspace(0, 1, num=100)
-    int_pred_sig = [
-        weights[(labels == 1) & (score > th_cut)].sum() for th_cut in thresholds_list
-    ]
-    plt.plot(thresholds_list, int_pred_sig)
-    plt.show()
+    sns.set_theme(rc={"figure.figsize": (16, 14)}, style="whitegrid")
 
+    hist_1, bins = np.histogram(
+        field_1,
+        bins=bins,
+        weights=data_set1["weights"],
+    )
 
-def visualize_scatter(ingestion_result_dict, ground_truth_mus):
-    plt.figure(figsize=(6, 4))
-    for key in ingestion_result_dict.keys():
-        ingestion_result = ingestion_result_dict[key]
-        mu_hat = np.mean(ingestion_result["mu_hats"])
-        mu = ground_truth_mus[key]
-        plt.scatter(mu, mu_hat, c='b', marker='o')
-    
-    plt.xlabel('Ground Truth $\mu$')
-    plt.ylabel('Predicted $\mu$ (averaged for 100 test sets)')
-    plt.title('Ground Truth vs. Predicted $\mu$ Values')
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.stairs(hist_1, bins, fill=False, label=plot_label[0])
+
+    hist_2, bins = np.histogram(
+        field_2,
+        bins=bins,
+        weights=data_set2["weights"],
+    )
+
+    plt.stairs(hist_2, bins, fill=False, label=plot_label[1])
+    plt.legend()
+
     plt.show()
+    plt.close()
+
 
 def roc_curve_wrapper(score, labels, weights, plot_label="model", color="b", lw=2):
+    """
+    Plot the Receiver Operating Characteristic (ROC) curve for a binary classification model.
 
+    .. image:: images/roc_curve.png
+
+    Parameters:
+    score (array-like): The predicted scores or probabilities for the positive class.
+    labels (array-like): The true labels for the binary classification problem.
+    weights (array-like): The sample weights for each data point.
+    plot_label (str, optional): The label to be displayed in the plot legend. Defaults to "model".
+    color (str, optional): The color of the ROC curve. Defaults to "b" (blue).
+    lw (int, optional): The linewidth of the ROC curve. Defaults to 2.
+
+    Returns:
+    None
+
+    """
     auc = roc_auc_score(y_true=labels, y_score=score, sample_weight=weights)
 
     plt.figure(figsize=(8, 7))
@@ -277,6 +346,16 @@ def roc_curve_wrapper(score, labels, weights, plot_label="model", color="b", lw=
 
 
 def events_histogram(field, labels, weights, plot_label=None, y_scale="log"):
+    """
+    Plot a histogram of events based on a given field, labels, and weights.
+
+    Args:
+        field (array-like): The field values for each event.
+        labels (array-like): The labels for each event (0 for background, 1 for signal).
+        weights (array-like): The weights for each event.
+        plot_label (str, optional): The label for the plot. Defaults to None.
+        y_scale (str, optional): The scale of the y-axis. Defaults to "log".
+    """
     plt.figure()
     sns.set_theme(rc={"figure.figsize": (8, 7)}, style="whitegrid")
     fig, ax = plt.subplots()
@@ -318,103 +397,3 @@ def events_histogram(field, labels, weights, plot_label=None, y_scale="log"):
 
     plt.show()
     plt.close()
-
-
-def score_histogram(score, labels, plot_label=None, y_scale="log"):
-    plt.figure()
-    sns.set_theme(rc={"figure.figsize": (8, 7)}, style="whitegrid")
-    fig, ax = plt.subplots()
-
-    high_low = (0, 1)
-    bins = 30
-
-    plt.hist(
-        score[labels == 1],
-        color="r",
-        alpha=0.7,
-        range=high_low,
-        bins=bins,
-        histtype="stepfilled",
-        density=False,
-        label="S",
-    )  # alpha is transparancy
-    plt.hist(
-        score[labels == 0],
-        color="b",
-        alpha=0.7,
-        range=high_low,
-        bins=bins,
-        histtype="stepfilled",
-        density=False,
-        label="B",
-    )
-
-    plt.legend()
-    plt.title(plot_label)
-    plt.xlabel(" Score ")
-    plt.ylabel(" count ")
-    ax.set_yscale(y_scale)
-
-    plt.show()
-    plt.close()
-
-
-def validationcurve(results, eval_metric, model_name="model"):
-
-    epochs = len(results["validation_0"][eval_metric])
-    x_axis = range(0, epochs)
-    plt.figure(figsize=(8, 7))
-    fig, ax = plt.subplots()
-    ax.plot(x_axis, results["validation_0"][eval_metric], label="Train")
-    ax.plot(x_axis, results["validation_1"][eval_metric], label="Validation")
-    ax.legend()
-    plt.ylabel(eval_metric)
-    plt.title(model_name + " logloss")
-    plt.show()
-
-
-def feature_importance_plot(columns, feature_importance, model_name="model"):
-
-    plt.figure(figsize=(8, 7))
-
-    plt.bar(columns, feature_importance)
-    plt.xticks(rotation=90)
-    plt.ylabel("Feature Importance")
-    plt.title(model_name + " Feature Importance")
-    plt.show()
-
-    top_features = []
-    for feature, importance in zip(columns, feature_importance):
-        if importance > 0.025:
-            top_features.append(feature)
-
-    print(top_features)
-
-
-def permutation_importance(model, data, model_name="model"):
-
-    plt.figure(figsize=(8, 7))
-
-    from sklearn.inspection import permutation_importance
-
-    r = permutation_importance(
-        model,
-        data.dfall,
-        data.target,
-        sample_weight=data.weights,
-        scoring="roc_auc",
-        n_repeats=1,
-        n_jobs=-1,
-        random_state=0,
-    )
-    plt.bar(
-        data.columns,
-        r.importances.mean(axis=1).T,
-    )
-
-    plt.xlabel("features")
-    plt.xticks(rotation=90)
-    plt.ylabel("impact on auc")
-    plt.title("Permutation Importance XGBoost + " + model_name)
-
-    plt.show()

@@ -2,9 +2,11 @@ import numpy as np
 import pandas as pd
 import json
 import os
+import subprocess
 import requests
-from zipfile import ZipFile
 from pathlib import Path
+from zipfile import ZipFile
+
 
 test_set_settings = None
 
@@ -94,7 +96,6 @@ class Data:
         test_data_dir = os.path.join(self.input_dir, "test", "data")
 
         # read test setting
-
         test_set = {
             "ztautau": pd.DataFrame(),
             "diboson": pd.DataFrame(),
@@ -120,8 +121,9 @@ class Data:
         set_mu=1,
         tes=1.0,
         jes=1.0,
-        soft_met=1.0,
-        w_scale=None,
+        soft_met=0.0,
+        ttbar_scale=None,
+        diboson_scale=None,
         bkg_scale=None,
         seed=42,
     ):
@@ -131,7 +133,8 @@ class Data:
         pesudo_exp_data = get_bootstraped_dataset(
             self.__test_set,
             mu=set_mu,
-            w_scale=w_scale,
+            ttbar_scale=ttbar_scale,
+            diboson_scale=diboson_scale,          
             bkg_scale=bkg_scale,
             seed=seed,
         )
@@ -145,20 +148,37 @@ class Data:
         return test_set
 
     def get_train_set(self):
+        """
+        Returns the train dataset.
+
+        Returns:
+        dict: The train dataset.
+        """
         return self.__train_set
 
+    def get_test_set(self):
+        """
+        Returns the test dataset.
+
+        Returns:
+        dict: The test dataset.
+        """
+        return self.__test_set
+
     def delete_train_set(self):
+        """
+        Deletes the train dataset.
+        """
         del self.__train_set
 
     def get_syst_train_set(
-        self, tes=1.0, jes=1.0, soft_met=1.0, w_scale=None, bkg_scale=None
+        self, tes=1.0, jes=1.0, soft_met=0.0, ttbar_scale=None, diboson_scale=None, bkg_scale=None
     ):
         from HiggsML.systematics import systematics
 
         if self.__train_set is None:
             self.load_train_set()
-        return systematics(self.__train_set, tes, jes, soft_met, w_scale, bkg_scale)
-
+        return systematics(self.__train_set, tes, jes, soft_met, ttbar_scale, diboson_scale, bkg_scale)
 
 def train_test_split(data_set, test_size=0.2, random_state=42, reweight=False):
     data = data_set["data"].copy()
@@ -240,6 +260,17 @@ def reweight(data_set):
 
 
 def Neurips2024_public_dataset():
+    """
+    Downloads and extracts the Neurips 2024 public dataset.
+
+    Returns:
+        Data: The path to the extracted input data.
+
+    Raises:
+        HTTPError: If there is an error while downloading the dataset.
+        FileNotFoundError: If the downloaded dataset file is not found.
+        zipfile.BadZipFile: If the downloaded file is not a valid zip file.
+    """
     current_path = Path.cwd()
     file_read_loc = current_path / "public_data"
     if not file_read_loc.exists():
@@ -269,8 +300,7 @@ def BlackSwan_public_dataset():
     if not file_read_loc.exists():
         file_read_loc.mkdir()
 
-    url = "https://www.codabench.org/datasets/download/37b5a9f9-6b5b-47bd-a0c7-ab10129cd457/"
-
+    url = "https://www.codabench.org/datasets/download/9c99a23c-f199-405a-b795-b42ea2dd652d/"
     file = file_read_loc / "public_data.zip"
     chunk_size = 1024 * 1024
     if not file.exists():
