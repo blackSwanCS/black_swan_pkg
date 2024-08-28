@@ -9,11 +9,34 @@ from itertools import product
 import warnings
 
 warnings.filterwarnings("ignore")
-
+DEFAULT_INGESTION_SEED = 31415
 
 # ------------------------------------------
 # Ingestion Class
 # ------------------------------------------
+
+def _generate_pseudo_exp_data(data, set_mu=1, tes=1.0, jes=1.0, soft_met=0.0, ttbar_scale=None, diboson_scale=None, bkg_scale=None, seed=0):
+
+        from systematics import get_bootstrapped_dataset, get_systematics_dataset
+
+        # get bootstrapped dataset from the original test set
+        pesudo_exp_data = get_bootstrapped_dataset(
+            data,
+            mu=set_mu,
+            ttbar_scale=ttbar_scale,
+            diboson_scale=diboson_scale,
+            bkg_scale=bkg_scale,
+            seed=seed,
+        )
+        test_set = get_systematics_dataset(
+            pesudo_exp_data,
+            tes=tes,
+            jes=jes,
+            soft_met=soft_met,
+        )
+
+        return test_set
+
 class Ingestion:
     """
     Class for handling the ingestion process.
@@ -22,11 +45,10 @@ class Ingestion:
         data (object): The data object.
 
     Attributes:
-        start_time (datetime): The start time of the ingestion process.
-        end_time (datetime): The end time of the ingestion process.
-        model (object): The model object.
-        data (object): The data object.
-
+        * start_time (datetime): The start time of the ingestion process.
+        * end_time (datetime): The end time of the ingestion process.
+        * model (object): The model object.
+        * data (object): The data object.
     """
 
     def __init__(self, data=None):
@@ -35,7 +57,6 @@ class Ingestion:
 
         Args:
             data (object): The data object.
-
         """
         self.start_time = None
         self.end_time = None
@@ -45,14 +66,12 @@ class Ingestion:
     def start_timer(self):
         """
         Start the timer for the ingestion process.
-
         """
         self.start_time = dt.now()
 
     def stop_timer(self):
         """
         Stop the timer for the ingestion process.
-
         """
         self.end_time = dt.now()
 
@@ -62,7 +81,6 @@ class Ingestion:
 
         Returns:
             timedelta: The duration of the ingestion process.
-
         """
         if self.start_time is None:
             print("[-] Timer was never started. Returning None")
@@ -77,7 +95,6 @@ class Ingestion:
     def show_duration(self):
         """
         Show the duration of the ingestion process.
-
         """
         print("\n---------------------------------")
         print(f"[✔] Total duration: {self.get_duration()}")
@@ -89,7 +106,6 @@ class Ingestion:
 
         Args:
             output_dir (str): The output directory to save the duration file.
-
         """
         duration = self.get_duration()
         duration_in_mins = int(duration.total_seconds() / 60)
@@ -104,7 +120,6 @@ class Ingestion:
 
         Returns:
             object: The loaded training set.
-
         """
         self.data.load_train_set()
         return self.data.get_train_set()
@@ -115,29 +130,27 @@ class Ingestion:
 
         Args:
             Model (object): The model class.
-
         """
         print("[*] Initializing Submitted Model")
         from HiggsML.systematics import systematics
 
-        self.model = Model(get_train_set=self.load_train_set(), systematics=systematics)
+        self.model = Model(get_train_set=self.load_train_set, systematics=systematics)
         self.data.delete_train_set()
 
     def fit_submission(self):
         """
         Fit the submitted model.
-
         """
         print("[*] Calling fit method of submitted model")
         self.model.fit()
+        
 
-    def predict_submission(self, test_settings):
+    def predict_submission(self, test_settings,initial_seed = DEFAULT_INGESTION_SEED):
         """
         Make predictions using the submitted model.
 
         Args:
             test_settings (dict): The test settings.
-
         """
         print("[*] Calling predict method of submitted model")
 
@@ -153,45 +166,52 @@ class Ingestion:
         # create a product of set and test set indices all combinations of tuples
         all_combinations = list(product(set_indices, test_set_indices))
         # randomly shuffle all combinations of indices
-        np.random.shuffle(all_combinations)
+        random_state_initial = np.random.RandomState(initial_seed)
+        random_state_initial.shuffle(all_combinations)
+
+        full_test_set = self.data.get_test_set()
+        del self.data
 
         self.results_dict = {}
         for set_index, test_set_index in all_combinations:
-            # random tes value (one per test set)
+
+            # create a seed
+            seed = (set_index * num_pseudo_experiments) + test_set_index + initial_seed
+
+            # get mu value of set from test settings
+            set_mu = test_settings["ground_truth_mus"][set_index]
+
+            random_state = np.random.RandomState(seed)
+
             if dict_systematics["tes"]:
-                tes = np.random.uniform(0.9, 1.1)
+                tes = np.clip(random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01)
             else:
                 tes = 1.0
             if dict_systematics["jes"]:
-                jes = np.random.uniform(0.9, 1.1)
+                jes = np.clip(random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01)
             else:
                 jes = 1.0
             if dict_systematics["soft_met"]:
-                soft_met = np.random.uniform(0.0, 5)
+                soft_met = np.clip(random_state.lognormal(mean=0.0, sigma=1.0), a_min=0.0, a_max=5.0)
             else:
                 soft_met = 0.0
 
             if dict_systematics["ttbar_scale"]:
-                ttbar_scale = np.random.uniform(0.5, 2)
+                ttbar_scale = np.clip(random_state.normal(loc=1.0, scale=0.02), a_min=0.8, a_max=1.2)
             else:
                 ttbar_scale = None
 
             if dict_systematics["diboson_scale"]:
-                diboson_scale = np.random.uniform(0.5, 2)
+                diboson_scale = np.clip(random_state.normal(loc=1.0, scale=0.25), a_min=0.0, a_max=2.0)
             else:
                 diboson_scale = None
 
             if dict_systematics["bkg_scale"]:
-                bkg_scale = np.random.uniform(0.995, 1.005)
+                bkg_scale = np.clip(random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01)
             else:
                 bkg_scale = None
 
-            # create a seed
-            seed = (set_index * num_pseudo_experiments) + test_set_index
-            # get mu value of set from test settings
-            set_mu = test_settings["ground_truth_mus"][set_index]
-
-            test_set = self.data.generate_psuedo_exp_data(
+            test_set = _generate_pseudo_exp_data(full_test_set,
                 set_mu=set_mu,
                 tes=tes,
                 jes=jes,
@@ -213,7 +233,6 @@ class Ingestion:
     def compute_result(self):
         """
         Compute the ingestion result.
-
         """
         print("[*] Saving ingestion result")
 
@@ -242,7 +261,6 @@ class Ingestion:
 
         Args:
             output_dir (str): The output directory to save the result files.
-
         """
         for key in self.results_dict.keys():
             result_file = os.path.join(output_dir, "result_" + str(key) + ".json")

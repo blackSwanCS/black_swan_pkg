@@ -85,6 +85,7 @@ class V4:
 
         Returns:
             p (float): norm of the 3D momentum
+
         """
         return np.sqrt(self.p2())
 
@@ -110,6 +111,7 @@ class V4:
         Returns:
             pt (float): norm of the transverse momentum
         """
+
         return np.sqrt(self.pt2())
 
     def m(self):
@@ -122,6 +124,7 @@ class V4:
         Returns:
             m (float): mass
         """
+
         return np.sqrt(np.abs(self.e**2 - self.p2()))  # abs is needed for protection
 
     def eta(self):
@@ -134,6 +137,7 @@ class V4:
         Returns:
             eta (float): pseudo-rapidity
         """
+
         return np.arcsinh(self.pz / self.pt())
 
     def phi(self):
@@ -146,18 +150,16 @@ class V4:
         Returns:
             phi (float): azimuthal angle
         """
+
         return np.arctan2(self.py, self.px)
 
     def deltaPhi(self, v):
         """
         Compute the azimuthal angle difference with another V4 object
-
-        Parameters:
-            v (V4): the other V4 object
-
-        Returns:
-            deltaPhi (float): azimuthal angle difference
+        Parameters: v (V4) - the other V4 object
+        Returns: deltaPhi (float) - azimuthal angle difference
         """
+
         return (self.phi() - v.phi() + 3 * np.pi) % (2 * np.pi) - np.pi
 
     def deltaEta(self, v):
@@ -182,6 +184,7 @@ class V4:
         Returns:
             deltaR (float): delta R with another V4 object
         """
+
         return np.sqrt(self.deltaPhi(v) ** 2 + self.deltaEta(v) ** 2)
 
     def eWithM(self, m=0.0):
@@ -193,10 +196,13 @@ class V4:
 
         Returns:
             e (float): energy with a given mass
+
         """
+
         return np.sqrt(self.p2() + m**2)
 
     def __str__(self):
+
         return "PxPyPzE( %s,%s,%s,%s)<=>PtEtaPhiM( %s,%s,%s,%s) " % (
             self.px,
             self.py,
@@ -264,32 +270,36 @@ class V4:
 def ttbar_bkg_weight_norm(weights, detailedlabel, systBkgNorm):
     """
     Apply a scaling to the weight. For ttbar background
-    
+
     Args:
-        weights (array-like): The weights to be scaled
-        detailedlabel (array-like): The detailed labels
-        systBkgNorm (float): The scaling factor
+        * weights (array-like): The weights to be scaled
+        * detailedlabel (array-like): The detailed labels
+        * systBkgNorm (float): The scaling factor
 
     Returns:
         array-like: The scaled weights
     """
-    weights[detailedlabel == "ttbar"] = weights[detailedlabel == "ttbar"]*systBkgNorm
+    weights[detailedlabel == "ttbar"] = weights[detailedlabel == "ttbar"] * systBkgNorm
     return weights
 
 
-def dibosn_bkg_weight_norm(weights, detailedlabel, systBkgNorm):
+def diboson_bkg_weight_norm(weights, detailedlabel, systBkgNorm):
     """
     Apply a scaling to the weight. For Diboson background
 
     Args:
-        weights (array-like): The weights to be scaled
-        detailedlabel (array-like): The detailed labels
-        systBkgNorm (float): The scaling factor
+        * weights (array-like): The weights to be scaled
+        * detailedlabel (array-like): The detailed labels
+        * systBkgNorm (float): The scaling factor
 
+    
     Returns:
         array-like: The scaled weights
+
     """
-    weights[detailedlabel == "diboson"] = weights[detailedlabel == "diboson"]*systBkgNorm
+    weights[detailedlabel == "diboson"] = (
+        weights[detailedlabel == "diboson"] * systBkgNorm
+    )
     return weights
 
 
@@ -304,10 +314,10 @@ def all_bkg_weight_norm(weights, label, systBkgNorm):
 
     Returns:
         array-like: The scaled weights
+
     """
     weights[label == 0] = weights[label == 0] * systBkgNorm
     return weights
-
 
 
 # ==================================================================================
@@ -318,17 +328,20 @@ def mom4_manipulate(data, systTauEnergyScale, systJetEnergyScale, soft_met, seed
     Manipulate primary inputs : the PRI_had_pt PRI_jet_leading_pt PRI_jet_subleading_pt and recompute the others values accordingly.
 
     Args:
-        data (pandas.DataFrame): The dataset to be manipulated
-        systTauEnergyScale (float): The factor applied to PRI_had_pt
-        systJetEnergyScale (float): The factor applied to all jet pt
-        soft_met (float): The additional soft MET energy
-        seed (int): The random seed
+        * data (pandas.DataFrame): The dataset to be manipulated
+        * systTauEnergyScale (float): The factor applied to PRI_had_pt
+        * systJetEnergyScale (float): The factor applied to all jet pt
+        * soft_met (float): The additional soft MET energy
+        * seed (int): The random seed
 
     Returns:
         pandas.DataFrame: The manipulated dataset
+
     """
+
     vmet = V4()
     vmet.setPtEtaPhiM(data["PRI_met"], 0.0, data["PRI_met_phi"], 0.0)
+    # met_sumet=data["PRI_met_sumet"]
 
     if systTauEnergyScale != 1.0:
         data["PRI_had_pt"] *= systTauEnergyScale
@@ -429,7 +442,13 @@ def mom4_manipulate(data, systTauEnergyScale, systJetEnergyScale, soft_met, seed
 
 def postprocess(data):
     """
-    Postprocess the data after manipulation
+    Select the events with the following conditions:
+    * PRI_had_pt > 26
+    * PRI_jet_leading_pt > 26
+    * PRI_jet_subleading_pt > 26
+    * PRI_lep_pt > 20
+
+    This is applied to the dataset after the systematics are applied
 
     Args:
         data (pandas.DataFrame): The manipulated dataset
@@ -437,7 +456,35 @@ def postprocess(data):
     Returns:
         pandas.DataFrame: The postprocessed dataset
     """
+    # apply higher threshold on had pt (dropping events)
     data = data.drop(data[data.PRI_had_pt < 26].index)
+    
+    #need to reindex
+    data.reset_index(drop=True, inplace=True)
+
+    # apply threshold on leading and subleading jets if they exist
+    # note that it is assumed that the systematics transformation is monotonous in pt
+    # so that leading and subleading jet should never be swapped
+
+    # if subleading jet pt below high threshold, do so it never existed
+    mask = data['PRI_jet_subleading_pt'].between(0, 26)
+    data.loc[mask, 'PRI_jet_all_pt'] -= data['PRI_jet_subleading_pt']
+    data.loc[mask, 'PRI_jet_subleading_pt'] = -25
+    data.loc[mask, 'PRI_jet_subleading_eta'] = -25
+    data.loc[mask, 'PRI_jet_subleading_phi'] = -25
+    data.loc[mask, 'PRI_n_jets'] -= 1
+
+    # if leading jet pt below high threshold, do so it never existed
+    mask = data['PRI_jet_leading_pt'].between(0, 26)
+    data.loc[mask, 'PRI_jet_all_pt'] -= data['PRI_jet_leading_pt']
+    data.loc[mask, 'PRI_jet_leading_pt'] = -25
+    data.loc[mask, 'PRI_jet_leading_eta'] = -25
+    data.loc[mask, 'PRI_jet_leading_phi'] = -25
+    data.loc[mask, 'PRI_n_jets'] -= 1
+
+
+
+    # apply low threshold on lepton pt (does nothing)
     data = data.drop(data[data.PRI_lep_pt < 20].index)
 
     return data
@@ -458,40 +505,44 @@ def systematics(
     Apply systematics to the dataset
 
     Args:
-        data_set (dict): The dataset to apply systematics to
-        tes (float): The factor applied to PRI_had_pt
-        jes (float): The factor applied to all jet pt
-        soft_met (float): The additional soft MET energy
-        seed (int): The random seed
-        ttbar_scale (float): The scaling factor for ttbar background
-        diboson_scale (float): The scaling factor for diboson background
-        bkg_scale (float): The scaling factor for other backgrounds
-        verbose (int): The verbosity level
+        * data_set (dict): The dataset to apply systematics to
+        * tes (float): The factor applied to PRI_had_pt
+        * jes (float): The factor applied to all jet pt
+        * soft_met (float): The additional soft MET energy
+        * seed (int): The random seed
+        * ttbar_scale (float): The scaling factor for ttbar background
+        * diboson_scale (float): The scaling factor for diboson background
+        * bkg_scale (float): The scaling factor for other backgrounds
+        * verbose (int): The verbosity level
 
     Returns:
         dict: The dataset with applied systematics
     """
-    if ttbar_scale is not None:
-        if "weights" in data_set.keys():
-            data_set["weights"] = ttbar_bkg_weight_norm(
-                data_set["weights"], data_set["detailed_labels"], ttbar_scale
-            )
-            
-    if diboson_scale is not None:
-        if "weights" in data_set.keys():
-            data_set["weights"] = dibosn_bkg_weight_norm(
-                data_set["weights"], data_set["detailed_labels"], diboson_scale
+    data_set_new = data_set.copy()
+
+    if "weights" in data_set_new.keys():
+        weights = data_set_new["weights"].copy()
+
+        if ttbar_scale is not None:
+            weights = ttbar_bkg_weight_norm(
+                weights, data_set["detailed_labels"], ttbar_scale
             )
 
-    if bkg_scale is not None:
-        if "weights" in data_set.keys():
-            data_set["weights"] = all_bkg_weight_norm(
-                data_set["weights"], data_set["labels"], bkg_scale
+        if diboson_scale is not None:
+            weights = diboson_bkg_weight_norm(
+                weights, data_set["detailed_labels"], diboson_scale
             )
+
+        if bkg_scale is not None:
+            weights = all_bkg_weight_norm(weights, data_set["labels"], bkg_scale)
+
+        data_set_new["weights"] = weights
 
     if verbose > 0:
         print("Tau energy rescaling :", tes)
-    data = mom4_manipulate(
+
+    # modify primary features according to tes, jes softmet    
+    data_syst = mom4_manipulate(
         data=data_set["data"].copy(),
         systTauEnergyScale=tes,
         systJetEnergyScale=jes,
@@ -499,79 +550,103 @@ def systematics(
         seed=seed,
     )
 
-    for key in data_set.keys():
-        if key is not "data":
-            data[key] = data_set[key]
+    
+# add back auxilliary columns label, weight, detailed label in a dataframe
+# if events are removed, they should also be removed from weights, label,detailedlabel
 
-    data_syst = postprocess(data)
+    for key in data_set_new.keys():
+        if key not in ["data","settings"]:
+            data_syst[key] = data_set_new[key]
 
+    # deal with thresholds on had pt and jet pt
+    # possibly remove sub leading jet
+    # possibly remove events
+    data_syst = postprocess(data_syst)
+
+    # build resulting dictionary
+    #dict
     data_syst_set = {}
-    for key in data_set.keys():
-        if key is not "data":
+    for key in data_set_new.keys():
+        if key not in ["data","settings"]:
             data_syst_set[key] = data_syst.pop(key)
-    data_syst_set["data"] = data_syst
+    # compute DERived features        
+    data_syst_set["data"] = DER_data(data_syst)
+    if "settings" in data_set_new.keys():
+        data_syst_set["settings"] = data_set_new["settings"]
 
     return data_syst_set
 
 
-LHC_NUMBERS = {
-    "ztautau": 3544019,
-    "diboson": 40590,
-    "ttbar": 158761,
-    "htautau": 3639,
-}
-
-
-def get_bootstraped_dataset(
+def get_bootstrapped_dataset(
     test_set,
     mu=1.0,
     seed=31415,
     ttbar_scale=None,
     diboson_scale=None,
     bkg_scale=None,
+    poisson=True,
 ):
     """
-    Generate a bootstraped dataset
+    Generate a bootstrapped dataset
 
     Args:
-        test_set (dict): The original test dataset
-        mu (float): The scaling factor for htautau background
-        seed (int): The random seed
-        ttbar_scale (float): The scaling factor for ttbar background
-        diboson_scale (float): The scaling factor for diboson background
-        bkg_scale (float): The scaling factor for other backgrounds
+        * test_set (dict): The original test dataset
+        * mu (float): The scaling factor for htautau background
+        * seed (int): The random seed
+        * ttbar_scale (float): The scaling factor for ttbar background
+        * diboson_scale (float): The scaling factor for diboson background
+        * bkg_scale (float): The scaling factor for other backgrounds
 
     Returns:
-        pandas.DataFrame: The bootstraped dataset
+        pandas.DataFrame: The bootstrapped dataset
     """
-    bkg_norm = LHC_NUMBERS.copy()
-    if ttbar_scale is not None:
-        bkg_norm["ttbar"] = int(LHC_NUMBERS["ttbar"] * ttbar_scale * bkg_scale)
-        
-    if diboson_scale is not None:
-        bkg_norm["diboson"] = int(LHC_NUMBERS["diboson"] * diboson_scale * bkg_scale)
+    bkg_norm = {
+        "ztautau": 1.0,
+        "diboson": 1.0,
+        "ttbar": 1.0,
+        "htautau": 1.0,
+    }
 
     if bkg_scale is not None:
-        bkg_norm["ztautau"] = int(LHC_NUMBERS["ztautau"] * bkg_scale)
+        bkg_scale_ = bkg_scale
+    else:
+        bkg_scale_ = 1.0
 
-    bkg_norm["htautau"] = int(LHC_NUMBERS["htautau"] * mu)
-    
-    
+    if ttbar_scale is not None:
+        bkg_norm["ttbar"] = ttbar_scale * bkg_scale_
+
+    if diboson_scale is not None:
+        bkg_norm["diboson"] = diboson_scale * bkg_scale_
+
+    if bkg_scale is not None:
+        bkg_norm["ztautau"] = bkg_scale_
+
+    bkg_norm["htautau"] = mu
 
     pseudo_data = []
-    for key in test_set.keys():
-        temp = (test_set[key].sample(
-            n=bkg_norm[key], replace=True, random_state=seed
-        ))
-        temp = test_set[key].sample(n=bkg_norm[key], replace=True, random_state=seed)
+    Seed = seed
+    for i, key in enumerate(test_set.keys()):
+        Seed = Seed + i
 
-        pseudo_data.append(temp)
+        if poisson:
+            random_state = np.random.RandomState(seed=Seed)
+            new_weights = random_state.poisson(bkg_norm[key] * test_set[key]["weights"])
+        else:
+            new_weights = bkg_norm[key] * test_set[key]["weights"]
+
+        temp_data = test_set[key][new_weights > 0]
+
+        temp_data["weights"] = new_weights[new_weights > 0]
+
+        pseudo_data.append(temp_data)
 
     pseudo_data = pd.concat(pseudo_data)
 
-    pseudo_data = pseudo_data.sample(frac=1, random_state=seed).reset_index(drop=True)
+    pseudo_data.reset_index(drop=True, inplace=True)
 
-    return pseudo_data
+    unweighted_data = repeat_rows_by_weight(pseudo_data.copy(), seed=seed)
+
+    return unweighted_data
 
 
 def get_systematics_dataset(
@@ -580,6 +655,7 @@ def get_systematics_dataset(
     jes=1.0,
     soft_met=0.0,
 ):
+
     weights = np.ones(data.shape[0])
 
     data_syst = systematics(
@@ -590,3 +666,22 @@ def get_systematics_dataset(
     )
 
     return data_syst
+
+
+# Assuming 'data_set' is a DataFrame with a 'weights' column
+def repeat_rows_by_weight(data_set,seed=31415):
+
+    # Ensure 'weights' column is integer, as fractional weights don't make sense for row repetition
+    data_set["weights"] = data_set["weights"].astype(int)
+
+    # Repeat rows based on the 'weights' column
+    repeated_data_set = data_set.loc[data_set.index.repeat(data_set["weights"])]
+
+    # Reset index to avoid duplicate indices
+    repeated_data_set.reset_index(drop=True, inplace=True)
+
+    repeated_data_set = repeated_data_set.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    repeated_data_set.drop(columns="weights", inplace=True)
+
+    return repeated_data_set

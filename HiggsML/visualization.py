@@ -12,27 +12,27 @@ class Dataset_visualise:
     A class for visualizing datasets.
 
     Parameters:
-    - data_set (dict): The dataset containing the data, labels, weights, and detailed labels.
-    - name (str): The name of the dataset (default: "dataset").
-    - columns (list): The list of column names to consider (default: None, which includes all columns).
+        * data_set (dict): The dataset containing the data, labels, weights, and detailed labels.
+        * name (str): The name of the dataset (default: "dataset").
+        * columns (list): The list of column names to consider (default: None, which includes all columns).
 
     Attributes:
-    - dfall (DataFrame): The dataset.
-    - target (Series): The labels.
-    - weights (Series): The weights.
-    - detailed_label (ndarray): The detailed labels.
-    - columns (list): The list of column names.
-    - name (str): The name of the dataset.
-    - keys (ndarray): The unique detailed labels.
-    - weight_keys (dict): The weights for each detailed label.
+        * dfall (DataFrame): The dataset.
+        * target (Series): The labels.
+        * weights (Series): The weights.
+        * detailed_label (ndarray): The detailed labels.
+        * columns (list): The list of column names.
+        * name (str): The name of the dataset.
+        * keys (ndarray): The unique detailed labels.
+        * weight_keys (dict): The weights for each detailed label.
 
     Methods:
-    - examine_dataset(): Prints information about the dataset.
-    - histogram_dataset(columns=None): Plots histograms of the dataset features.
-    - correlation_plots(columns=None): Plots correlation matrices of the dataset features.
-    - pair_plots(sample_size=10, columns=None): Plots pair plots of the dataset features.
-    - stacked_histogram(field_name, mu_hat=1.0, bins=30): Plots a stacked histogram of a specific field in the dataset.
-    - pair_plots_syst(df_syst, sample_size=10): Plots pair plots between the dataset and a system dataset.
+        * examine_dataset(): Prints information about the dataset.
+        * histogram_dataset(columns=None): Plots histograms of the dataset features.
+        * correlation_plots(columns=None): Plots correlation matrices of the dataset features.
+        * pair_plots(sample_size=10, columns=None): Plots pair plots of the dataset features.
+        * stacked_histogram(field_name, mu_hat=1.0, bins=30): Plots a stacked histogram of a specific field in the dataset.
+        * pair_plots_syst(df_syst, sample_size=10): Plots pair plots between the dataset and a system dataset.
     """
 
     def __init__(self, data_set, name="dataset", columns=None):
@@ -77,15 +77,13 @@ class Dataset_visualise:
     def histogram_dataset(self, columns=None):
         """
         Plots histograms of the dataset features.
-        
-        .. image:: images/histogram_datasets.png
-        :width: 400
-        
 
-        Parameters:
-        - columns (list): The list of column names to consider (default: None, which includes all columns).
+        Args:
+            * columns (list): The list of column names to consider (default: None, which includes all columns).
+
+        .. Image:: ../images/histogram_datasets.png
         """
-        if columns == None:
+        if columns is None:
             columns = self.columns
         sns.set_theme(rc={"figure.figsize": (40, 40)}, style="whitegrid")
 
@@ -125,11 +123,13 @@ class Dataset_visualise:
         """
         Plots correlation matrices of the dataset features.
 
-        Parameters:
-        - columns (list): The list of column names to consider (default: None, which includes all columns).
+        Args:
+        * columns (list): The list of column names to consider (default: None, which includes all columns).
+
+        .. Image:: ../images/correlation_plots.png
         """
         caption = ["Signal feature", "Background feature"]
-        if columns == None:
+        if columns is None:
             columns = self.columns
         sns.set_theme(rc={"figure.figsize": (10, 10)}, style="whitegrid")
 
@@ -147,11 +147,13 @@ class Dataset_visualise:
         """
         Plots pair plots of the dataset features.
 
-        Parameters:
-        - sample_size (int): The number of samples to consider (default: 10).
-        - columns (list): The list of column names to consider (default: None, which includes all columns).
+        Args:
+            * sample_size (int): The number of samples to consider (default: 10).
+            * columns (list): The list of column names to consider (default: None, which includes all columns).
+
+        .. Image:: ../images/pair_plot.png
         """
-        if columns == None:
+        if columns is None:
             columns = self.columns
         df_sample = self.dfall[columns].copy()
         df_sample["Label"] = self.target
@@ -176,10 +178,10 @@ class Dataset_visualise:
         )  # Change alpha value here
         ax.add_legend(title="Legend", labels=["Signal", "Background"], fontsize=12)
 
-        legend = ax._legend
-        for lh in legend.legendHandles:
-            lh.set_alpha(0.5)
-            lh._sizes = [10]
+        legend = ax.legend
+        for line in legend.get_lines():  # For lines
+            line.set_alpha(0.5)
+            line.set_linewidth(1.5)
 
         plt.rcParams["figure.facecolor"] = "w"  # Set the figure facecolor to white
         ax.figure.suptitle("Pair plots of features in" + self.name)
@@ -190,13 +192,12 @@ class Dataset_visualise:
         """
         Plots a stacked histogram of a specific field in the dataset.
 
-        .. image:: images/stacked_histogram.png
-        :width: 400
+        Args:
+            * field_name (str): The name of the field to plot.
+            * mu_hat (float): The value of mu (default: 1.0).
+            * bins (int): The number of bins for the histogram (default: 30).
 
-        Parameters:
-        - field_name (str): The name of the field to plot.
-        - mu_hat (float): The value of mu (default: 1.0).
-        - bins (int): The number of bins for the histogram (default: 30).
+        .. Image:: ../images/stacked_histogram.png
         """
         field = self.dfall[field_name]
         sns.set_theme(rc={"figure.figsize": (8, 7)}, style="whitegrid")
@@ -256,75 +257,87 @@ class Dataset_visualise:
         plt.ylabel("Weighted count")
         plt.show()
 
+    def pair_plots_syst(self, df_syst, sample_size=10):
+        """
+        Plots pair plots between the dataset and a system dataset.
 
-def histgram_compare(
-    data_set1, data_set2, field_name, bins=30, plot_label=["data_set1", "data_set2"]
-):
-    """Compare the histograms of two data sets based on a given field.
+        Args:
+            * df_syst (DataFrame): The system dataset.
+            * sample_size (int): The number of samples to consider (default: 10).
+        
+        ..images:: ../images/pair_plot_syst.png
+        """
+        df_sample = self.dfall[self.columns].copy()
+        df_sample_syst = df_syst[self.columns].copy()
 
-    This function plots and compares the histograms of two data sets based on a specified field.
-    It uses the seaborn and matplotlib libraries for visualization.
+        df_sample = df_sample.sample(n=sample_size)
+        df_sample["syst"] = False
 
-    .. image:: images/histogram_compare.png
-    :width: 400
+        df_sample_syst = df_sample_syst.sample(n=sample_size)
+        df_sample_syst["syst"] = True
+
+        frames = [df_sample, df_sample_syst]
+        del df_sample
+        df_sample = pd.concat(frames)
+
+        sns.set_theme(rc={"figure.figsize": (16, 14)}, style="whitegrid")
+
+        ax = sns.PairGrid(df_sample, hue="syst")
+        ax.map_upper(sns.scatterplot, alpha=0.5, size=0.3)
+        ax.map_lower(
+            sns.kdeplot, fill=True, levels=5, alpha=0.5
+        )  # Change alpha value here
+        ax.map_diag(
+            sns.histplot,
+            alpha=0.3,
+            bins=25,
+        )  # Change alpha value here
+        ax.add_legend(title="Legend", labels=["syst", "no_syst"], fontsize=12)
+
+        ax.figure.suptitle("Pair plots of features between syst and no_syst")
+        plt.show()
+        plt.close()
+
+
+
+def visualize_scatter(ingestion_result_dict, ground_truth_mus):
+    """
+    Plots a scatter Plot of ground truth vs. predicted mu values.
 
     Args:
-        data_set1 (dict): The first data set containing the field of interest.
-        data_set2 (dict): The second data set containing the field of interest.
-        field_name (str): The name of the field to compare.
-        bins (int, optional): The number of bins to use for the histogram. Defaults to 30.
-        plot_label (list, optional): The labels for the two data sets in the plot legend. Defaults to ["data_set1", "data_set2"].
-
-    Returns:
-        None
+        * ingestion_result_dict (dict): A dictionary containing the ingestion results.
+        * ground_truth_mus (dict): A dictionary of ground truth mu values.
+        
+    .. Image:: ../images/scatter_plot_mu.png
     """
-
-    field_1 = data_set1["data"][field_name]
-    field_2 = data_set2["data"][field_name]
-
-    sns.set_theme(rc={"figure.figsize": (8, 7)}, style="whitegrid")
-
-    sns.set_theme(rc={"figure.figsize": (16, 14)}, style="whitegrid")
-
-    hist_1, bins = np.histogram(
-        field_1,
-        bins=bins,
-        weights=data_set1["weights"],
-    )
-
-    plt.stairs(hist_1, bins, fill=False, label=plot_label[0])
-
-    hist_2, bins = np.histogram(
-        field_2,
-        bins=bins,
-        weights=data_set2["weights"],
-    )
-
-    plt.stairs(hist_2, bins, fill=False, label=plot_label[1])
-    plt.legend()
-
+    plt.figure(figsize=(6, 4))
+    for key in ingestion_result_dict.keys():
+        ingestion_result = ingestion_result_dict[key]
+        mu_hat = np.mean(ingestion_result["mu_hats"])
+        mu = ground_truth_mus[key]
+        plt.scatter(mu, mu_hat, c='b', marker='o')
+    
+    plt.xlabel('Ground Truth $\mu$')
+    plt.ylabel('Predicted $\mu$ (averaged for 100 test sets)')
+    plt.title('Ground Truth vs. Predicted $\mu$ Values')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.show()
-    plt.close()
-
 
 def roc_curve_wrapper(score, labels, weights, plot_label="model", color="b", lw=2):
     """
-    Plot the Receiver Operating Characteristic (ROC) curve for a binary classification model.
+    Plots the ROC curve.
 
-    .. image:: images/roc_curve.png
-
-    Parameters:
-    score (array-like): The predicted scores or probabilities for the positive class.
-    labels (array-like): The true labels for the binary classification problem.
-    weights (array-like): The sample weights for each data point.
-    plot_label (str, optional): The label to be displayed in the plot legend. Defaults to "model".
-    color (str, optional): The color of the ROC curve. Defaults to "b" (blue).
-    lw (int, optional): The linewidth of the ROC curve. Defaults to 2.
-
-    Returns:
-    None
-
+    Args:
+        * score (ndarray): The score.
+        * labels (ndarray): The labels.
+        * weights (ndarray): The weights.
+        * plot_label (str, optional): The plot label. Defaults to "model".
+        * color (str, optional): The color. Defaults to "b".
+        * lw (int, optional): The line width. Defaults to 2.
+        
+    .. Image:: ../images/roc_curve.png
     """
+
     auc = roc_auc_score(y_true=labels, y_score=score, sample_weight=weights)
 
     plt.figure(figsize=(8, 7))
@@ -345,55 +358,35 @@ def roc_curve_wrapper(score, labels, weights, plot_label="model", color="b", lw=
     plt.close()
 
 
-def events_histogram(field, labels, weights, plot_label=None, y_scale="log"):
+def visualize_coverage(ingestion_result_dict, ground_truth_mus):
     """
-    Plot a histogram of events based on a given field, labels, and weights.
+    Plots a coverage plot of the mu values.
 
     Args:
-        field (array-like): The field values for each event.
-        labels (array-like): The labels for each event (0 for background, 1 for signal).
-        weights (array-like): The weights for each event.
-        plot_label (str, optional): The label for the plot. Defaults to None.
-        y_scale (str, optional): The scale of the y-axis. Defaults to "log".
+        * ingestion_result_dict (dict): A dictionary containing the ingestion results.
+        * ground_truth_mus (dict): A dictionary of ground truth mu values.
+        
+    .. Image:: ../images/coverage_plot.png
     """
-    plt.figure()
-    sns.set_theme(rc={"figure.figsize": (8, 7)}, style="whitegrid")
-    fig, ax = plt.subplots()
 
-    high_low = (0, 1)
-    bins = 30
+    for key in ingestion_result_dict.keys():
+        plt.figure( figsize=(5, 5))
 
-    weights_signal = weights[labels == 1]
-    weights_background = weights[labels == 0]
+        ingestion_result = ingestion_result_dict[key]
+        mu = ground_truth_mus[key]
+        mu_hats = np.mean(ingestion_result["mu_hats"])
+        p16s = ingestion_result["p16"]
+        p84s = ingestion_result["p84"]
+        
+        # plot horizontal lines from p16 to p84
+        for i, (p16, p84) in enumerate(zip(p16s, p84s)):
+            plt.hlines(y=i, xmin=p16, xmax=p84, colors='b', label='p16-p84')
 
-    plt.hist(
-        field[labels == 1],
-        color="r",
-        alpha=0.7,
-        range=high_low,
-        bins=bins,
-        histtype="stepfilled",
-        density=False,
-        label="S",
-        weights=weights_signal,
-    )  # alpha is transparancy
-    plt.hist(
-        field[labels == 0],
-        color="b",
-        alpha=0.7,
-        range=high_low,
-        bins=bins,
-        histtype="stepfilled",
-        density=False,
-        label="B",
-        weights=weights_background,
-    )
-
-    plt.legend()
-    plt.title(plot_label)
-    plt.xlabel(" Score ")
-    plt.ylabel(" Number of events ")
-    ax.set_yscale(y_scale)
-
+        plt.vlines(x=mu_hats, ymin=0, ymax=len(p16s), colors='r', linestyles='dashed', label='Predicted $\mu$')
+        plt.vlines(x=mu, ymin=0, ymax=len(p16s), colors='g', linestyles='dashed', label='Ground Truth $\mu$')
+        plt.xlabel('mu')
+        plt.ylabel('pseudo-experiments')
+        plt.title(f'mu distribution - Set_{key}')
+        plt.legend()
+        
     plt.show()
-    plt.close()
