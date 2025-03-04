@@ -6,47 +6,99 @@ import os
 from datetime import datetime as dt
 import json
 from itertools import product
-import warnings
+import logging
 
-warnings.filterwarnings("ignore")
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 
+
+logging.basicConfig(
+    level=getattr(
+        logging, log_level, logging.INFO
+    ),  # Fallback to INFO if the level is invalid
+    format="%(asctime)s - %(name)-20s - %(levelname) -8s - %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_INGESTION_SEED = 31415
+
+from HiggsML.systematics import generate_pseudo_exp_data
 
 # ------------------------------------------
 # Ingestion Class
 # ------------------------------------------
+
+
 class Ingestion:
+    """
+    Class for handling the ingestion process.
+
+    Args:
+        data (object): The data object.
+
+    Attributes:
+        * start_time (datetime): The start time of the ingestion process.
+        * end_time (datetime): The end time of the ingestion process.
+        * model (object): The model object.
+        * data (object): The data object.
+    """
 
     def __init__(self, data=None):
+        """
+        Initialize the Ingestion class.
 
-        # Initialize class variables
+        Args:
+            data (object): The data object.
+        """
         self.start_time = None
         self.end_time = None
         self.model = None
         self.data = data
 
     def start_timer(self):
+        """
+        Start the timer for the ingestion process.
+        """
         self.start_time = dt.now()
 
     def stop_timer(self):
+        """
+        Stop the timer for the ingestion process.
+        """
         self.end_time = dt.now()
 
     def get_duration(self):
+        """
+        Get the duration of the ingestion process.
+
+        Returns:
+            timedelta: The duration of the ingestion process.
+        """
         if self.start_time is None:
-            print("[-] Timer was never started. Returning None")
+            logger.warning("Timer was never started. Returning None")
             return None
 
         if self.end_time is None:
-            print("[-] Timer was never stoped. Returning None")
+            logger.warning("Timer was never stopped. Returning None")
             return None
 
         return self.end_time - self.start_time
 
     def show_duration(self):
+        """
+        Show the duration of the ingestion process.
+        """
         print("\n---------------------------------")
         print(f"[✔] Total duration: {self.get_duration()}")
         print("---------------------------------")
 
     def save_duration(self, output_dir=None):
+        """
+        Save the duration of the ingestion process to a file.
+
+        Args:
+            output_dir (str): The output directory to save the duration file.
+        """
         duration = self.get_duration()
         duration_in_mins = int(duration.total_seconds() / 60)
         duration_file = os.path.join(output_dir, "ingestion_duration.json")
@@ -54,23 +106,46 @@ class Ingestion:
             with open(duration_file, "w") as f:
                 f.write(json.dumps({"ingestion_duration": duration_in_mins}, indent=4))
 
-    def load_train_set(self):
-        self.data.load_train_set()
+    def load_train_set(self, **kwargs):
+        """
+        Load the training set.
+
+        Returns:
+            object: The loaded training set.
+        """
+        self.data.load_train_set(**kwargs)
         return self.data.get_train_set()
 
     def init_submission(self, Model):
-        print("[*] Initializing Submmited Model")
+        """
+        Initialize the submitted model.
+
+        Args:
+            Model (object): The model class.
+        """
+        logger.info("Initializing Submmited Model")
         from HiggsML.systematics import systematics
 
-        self.model = Model(get_train_set=self.load_train_set(), systematics=systematics)
+        self.model = Model(get_train_set=self.load_train_set, systematics=systematics)
         self.data.delete_train_set()
 
     def fit_submission(self):
-        print("[*] Calling fit method of submitted model")
+        """
+        Fit the submitted model.
+        """
+        logger.info("Calling fit method of submitted model")
         self.model.fit()
 
-    def predict_submission(self, test_settings):
-        print("[*] Calling predict method of submitted model")
+    def predict_submission(self, test_settings, initial_seed=DEFAULT_INGESTION_SEED):
+        """
+        Make predictions using the submitted model.
+
+        Args:
+            test_settings (dict): The test settings.
+        """
+        logger.info(
+            "Calling predict method of submitted model with seed: %s", initial_seed
+        )
 
         dict_systematics = test_settings["systematics"]
         num_pseudo_experiments = test_settings["num_pseudo_experiments"]
@@ -84,60 +159,47 @@ class Ingestion:
         # create a product of set and test set indices all combinations of tuples
         all_combinations = list(product(set_indices, test_set_indices))
         # randomly shuffle all combinations of indices
-        np.random.shuffle(all_combinations)
+        random_state_initial = np.random.RandomState(initial_seed)
+        random_state_initial.shuffle(all_combinations)
+
+        full_test_set = self.data.get_test_set()
+        del self.data
 
         self.results_dict = {}
         for set_index, test_set_index in all_combinations:
-            # random tes value (one per test set)
-            if dict_systematics["tes"]:
-                tes = np.random.uniform(0.9, 1.1)
-            else:
-                tes = 1.0
-            if dict_systematics["jes"]:
-                jes = np.random.uniform(0.9, 1.1)
-            else:
-                jes = 1.0
-            if dict_systematics["soft_met"]:
-                soft_met = np.random.uniform(0.0, 5)
-            else:
-                soft_met = 1.0
-
-            if dict_systematics["w_scale"]:
-                w_scale = np.random.uniform(0.5, 2)
-            else:
-                w_scale = None
-
-            if dict_systematics["bkg_scale"]:
-                bkg_scale = np.random.uniform(0.5, 2)
-            else:
-                bkg_scale = None
 
             # create a seed
-            seed = (set_index * num_pseudo_experiments) + test_set_index
+            seed = (set_index * num_pseudo_experiments) + test_set_index + initial_seed
+
             # get mu value of set from test settings
             set_mu = test_settings["ground_truth_mus"][set_index]
 
-            test_set = self.data.generate_psuedo_exp_data(
-                set_mu=set_mu,
-                tes=tes,
-                jes=jes,
-                soft_met=soft_met,
-                w_scale=w_scale,
-                bkg_scale=bkg_scale,
-                seed=42,
+            test_set = generate_pseudo_exp_data(
+                full_test_set, set_mu, dict_systematics, seed
+            )
+
+            logger.debug(
+                f"set_index: {set_index} - test_set_index: {test_set_index} - seed: {seed}"
             )
 
             predicted_dict = self.model.predict(test_set)
             predicted_dict["test_set_index"] = test_set_index
 
+            logger.debug(
+                f"mu_hat: {predicted_dict['mu_hat']} - delta_mu_hat: {predicted_dict['delta_mu_hat']} - p16: {predicted_dict['p16']} - p84: {predicted_dict['p84']}"
+            )
 
             if set_index not in self.results_dict:
                 self.results_dict[set_index] = []
             self.results_dict[set_index].append(predicted_dict)
 
     def compute_result(self):
-        print("[*] Saving ingestion result")
+        """
+        Compute the ingestion result.
+        """
+        logger.info("Computing Ingestion Result")
 
+        # loop over sets
         for key in self.results_dict.keys():
             set_result = self.results_dict[key]
             set_result.sort(key=lambda x: x["test_set_index"])
@@ -156,51 +218,14 @@ class Ingestion:
             }
             self.results_dict[key] = ingestion_result_dict
 
-
     def save_result(self, output_dir=None):
+        """
+        Save the ingestion result to files.
+
+        Args:
+            output_dir (str): The output directory to save the result files.
+        """
         for key in self.results_dict.keys():
             result_file = os.path.join(output_dir, "result_" + str(key) + ".json")
             with open(result_file, "w") as f:
                 f.write(json.dumps(self.results_dict[key], indent=4))
-
-
-
-if __name__ == "__main__":
-
-    print("############################################")
-    print("### Ingestion Program")
-    print("############################################\n")
-
-    # Init Ingestion
-    ingestion = Ingestion()
-
-    # Start timer
-    ingestion.start_timer()
-
-    # initialize submission
-    ingestion.init_submission()
-
-    # fit submission
-    ingestion.fit_submission()
-
-    # load test set
-    ingestion.load_test_set()
-
-    # predict submission
-    ingestion.predict_submission()
-
-    # save result
-    ingestion.save_result()
-
-    # Stop timer
-    ingestion.stop_timer()
-
-    # Show duration
-    ingestion.show_duration()
-
-    # Save duration
-    ingestion.save_duration()
-
-    print("\n----------------------------------------------")
-    print("[✔] Ingestions Program executed successfully!")
-    print("----------------------------------------------\n\n")

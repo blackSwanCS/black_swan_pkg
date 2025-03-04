@@ -7,7 +7,7 @@ authors = [
   { name="V. Estrade", email="v.estrade@centralesupelec.fr" },
   { name="Ihsan Ullah", email="ihsan.ullah@universite-paris-saclay.fr"}
 ]
-description = "A Black Swan test package"
+description = "A Black Swan package"
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
@@ -38,7 +38,7 @@ install_requires=["numpy>=1.26.4",
 
 
 [build-system]
-requires = ["hatchling", "numpy", "pandas", "scikit-learn", "matplotlib", "seaborn", "pyarrow","requests", "setuptools"]
+requires = ["hatchling", "numpy", "mpld3", "pandas", "scikit-learn", "matplotlib", "seaborn", "pyarrow","requests", "setuptools"]
 build-backend = "hatchling.build"
 
 [project.urls]
