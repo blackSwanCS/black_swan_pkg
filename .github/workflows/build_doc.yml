@@ -45,6 +45,7 @@ jobs:
             # Step 8: Add and Commit Changes
             - name: Commit built documentation
               run: |
+                git checkout -b update_docs
                 git add .
                 if git diff-index --quiet HEAD; then
                 echo "No changes to commit."
@@ -52,7 +53,7 @@ jobs:
                 fi
                 git commit -m "Auto-build Sphinx documentation"
 
-            # Step 9: Push Changes Back to Master
-            - name: Push changes to master
+            # Step 9: Push Changes
+            - name: Push changes
               run: |
-                git push origin main
+                git push --set-upstream origin update_docs
