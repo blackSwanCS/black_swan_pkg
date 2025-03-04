@@ -14,8 +14,9 @@ jobs:
 
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v2
-
+              uses: actions/checkout@v4
+              with:
+                persist-credentials: false  # Disable default GitHub token
 
             - name: Set up Python
               uses: actions/setup-python@v2
@@ -39,4 +40,4 @@ jobs:
                 git config --global user.email "github-actions[bot]@users.noreply.github.com"
                 git add .
                 git commit -m "Automated commit: $(date)" || echo "No changes to commit"
-                git push origin updating_doc
+                git push https://x-access-token:${{ secrets.BlackSwan }}@github.com/${{ github.repository }}.git
