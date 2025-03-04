@@ -52,7 +52,13 @@ jobs:
                 fi
                 git commit -m "Auto-build Sphinx documentation"
 
-            # Step 9: Push Changes Back to Master
-            - name: Push changes to master
-              run: |
-                git push origin main
+            - name: Create Pull Request
+              uses: peter-evans/create-pull-request@v6
+              with:
+                token: ${{ secrets.GITHUB_TOKEN }}
+                branch: auto-update-branch
+                base: main
+                title: "Automated PR - Updates"
+                body: "This is an automated PR with updates."
+                labels: "automation, update"
+                assignees: "ragansu"
