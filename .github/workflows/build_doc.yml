@@ -34,3 +34,22 @@ jobs:
               run: |
                 cd docs
                 make html
+
+
+            - name: Configure Git
+              run: |
+                git config --global user.name "GitHub Actions"
+                git config --global user.email "actions@github.com"
+
+            - name: Commit built documentation
+              run: |
+                git add .
+                if git diff-index --quiet HEAD; then
+                echo "No changes to commit."
+                exit 0
+                fi
+                git commit -m "Auto-build Sphinx documentation"
+
+            - name: Push changes to master
+              run: |
+                git push origin master
