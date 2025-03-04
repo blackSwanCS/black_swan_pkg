@@ -57,5 +57,4 @@ jobs:
             # Step 9: Push Changes
             - name: Push changes
               run: |
-                git set-upstream origin update_docs
-                git push origin update_docs
+                git push --set-upstream origin update_docs
