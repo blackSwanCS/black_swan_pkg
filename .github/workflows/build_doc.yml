@@ -3,7 +3,7 @@ name: Build Sphinx Documentation
 on:
     push:
         branches:
-            - update_PR
+            - main
     pull_request:
         branches:
             - main
@@ -45,6 +45,7 @@ jobs:
             # Step 8: Add and Commit Changes
             - name: Commit built documentation
               run: |
+                git checkout -b update_docs
                 git add .
                 if git diff-index --quiet HEAD; then
                 echo "No changes to commit."
@@ -52,13 +53,8 @@ jobs:
                 fi
                 git commit -m "Auto-build Sphinx documentation"
 
-            - name: Create Pull Request
-              uses: peter-evans/create-pull-request@v6
-              with:
-                token: ${{ secrets.GITHUB_TOKEN }}
-                branch: auto-update-branch
-                base: main
-                title: "Automated PR - Updates"
-                body: "This is an automated PR with updates."
-                labels: "automation, update"
-                assignees: "ragansu"
+            # Step 9: Push Changes
+            - name: Push changes
+              run: |
+                git set-upstream origin update_docs
+                git push origin update_docs
