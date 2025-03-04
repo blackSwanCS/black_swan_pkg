@@ -28,7 +28,10 @@ NEURPIS_DATA_URL = (
     "https://www.codabench.org/datasets/download/b9e59d0a-4db3-4da4-b1f8-3f609d1835b2/"
 )
 
-BLACK_SWAN_DATA_URL = "https://www.codabench.org/datasets/download/3b3b3b3b-3b3b-3b3b-3b3b-3b3b3b3b3b3b/"
+BLACK_SWAN_DATA_URL = (
+    "https://www.codabench.org/datasets/download/3b3b3b3b-3b3b-3b3b-3b3b-3b3b3b3b3b3b/"
+)
+
 
 class Data:
     """
@@ -82,7 +85,10 @@ class Data:
         parquet_file = pq.ParquetFile(train_data_file)
 
         # Step 1: Determine the total number of rows
-        total_rows = sum(parquet_file.metadata.row_group(i).num_rows for i in range(parquet_file.num_row_groups))
+        total_rows = sum(
+            parquet_file.metadata.row_group(i).num_rows
+            for i in range(parquet_file.num_row_groups)
+        )
 
         if sample_size is not None:
             if isinstance(sample_size, int):
@@ -106,8 +112,10 @@ class Data:
             sample_size = total_rows
 
         if selected_indices is None:
-            selected_indices = np.random.choice(total_rows, size=sample_size, replace=False)
-        
+            selected_indices = np.random.choice(
+                total_rows, size=sample_size, replace=False
+            )
+
         selected_indices = np.sort(selected_indices)
 
         selected_indices_set = set(selected_indices)
@@ -135,8 +143,16 @@ class Data:
             row_group_size = len(row_group)
 
             # Determine indices within the current row group that fall in the selected range
-            within_group_indices = selected_indices[(selected_indices >= current_row) & (selected_indices < current_row + row_group_size)] - current_row
-            sampled_df = pd.concat([sampled_df, row_group.iloc[within_group_indices]], ignore_index=True)
+            within_group_indices = (
+                selected_indices[
+                    (selected_indices >= current_row)
+                    & (selected_indices < current_row + row_group_size)
+                ]
+                - current_row
+            )
+            sampled_df = pd.concat(
+                [sampled_df, row_group.iloc[within_group_indices]], ignore_index=True
+            )
 
             # Update the current row count
             current_row += row_group_size
@@ -148,7 +164,9 @@ class Data:
         logger.info(f"Sampled train data shape: {sampled_df.shape}")
         logger.info(f"Sampled train labels shape: {selected_train_labels.shape}")
         logger.info(f"Sampled train weights shape: {selected_train_weights.shape}")
-        logger.info(f"Sampled train detailed labels shape: {selected_train_detailed_labels.shape}")
+        logger.info(
+            f"Sampled train detailed labels shape: {selected_train_detailed_labels.shape}"
+        )
 
         self.__train_set = {
             "data": sampled_df,
@@ -158,7 +176,12 @@ class Data:
             "detailed_labels": selected_train_detailed_labels,
         }
 
-        del sampled_df, selected_train_labels, selected_train_weights, selected_train_detailed_labels
+        del (
+            sampled_df,
+            selected_train_labels,
+            selected_train_weights,
+            selected_train_detailed_labels,
+        )
 
         buffer = io.StringIO()
         self.__train_set["data"].info(buf=buffer, memory_usage="deep", verbose=False)
@@ -210,7 +233,6 @@ class Data:
             dict: The train dataset.
         """
         train_set = self.__train_set
-        self.delete_train_set()
         return train_set
 
     def get_test_set(self):
@@ -227,31 +249,6 @@ class Data:
         Deletes the train dataset.
         """
         del self.__train_set
-
-    def get_syst_train_set(
-        self,
-        tes=1.0,
-        jes=1.0,
-        soft_met=0.0,
-        ttbar_scale=None,
-        diboson_scale=None,
-        bkg_scale=None,
-        dopostprocess=False,
-    ):
-        from systematics import systematics
-
-        if self.__train_set is None:
-            self.load_train_set()
-        return systematics(
-            self.__train_set,
-            tes,
-            jes,
-            soft_met,
-            ttbar_scale,
-            diboson_scale,
-            bkg_scale,
-            dopostprocess=dopostprocess,
-        )
 
 
 current_path = os.path.dirname(os.path.realpath(__file__))
@@ -273,7 +270,9 @@ def __load_dataset(url):
     parent_path = os.path.dirname(os.path.realpath(__file__))
     current_path = os.path.dirname(parent_path)
     public_data_folder_path = os.path.join(current_path, "public_data")
-    public_input_data_folder_path = os.path.join(current_path, "public_data", "input_data")
+    public_input_data_folder_path = os.path.join(
+        current_path, "public_data", "input_data"
+    )
     public_data_zip_path = os.path.join(current_path, "public_data.zip")
 
     # Check if public_data dir exists
@@ -293,7 +292,7 @@ def __load_dataset(url):
         chunk_size = 1024 * 1024
         response = requests.get(url, stream=True)
         if response.status_code == 200:
-            with open(public_data_zip_path, 'wb') as file:
+            with open(public_data_zip_path, "wb") as file:
                 # Iterate over the response in chunks
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     # Filter out keep-alive new chunks
@@ -302,10 +301,11 @@ def __load_dataset(url):
 
     # Extract public_data.zip
     print("[*] Extracting public_data.zip")
-    with ZipFile(public_data_zip_path, 'r') as zip_ref:
+    with ZipFile(public_data_zip_path, "r") as zip_ref:
         zip_ref.extractall(public_data_folder_path)
 
     return Data(public_input_data_folder_path)
+
 
 def Neurips2024_public_dataset():
     """
@@ -321,7 +321,8 @@ def Neurips2024_public_dataset():
     """
     return __load_dataset(NEURPIS_DATA_URL)
 
-def Black_swan_public_dataset():
+
+def BlackSwan_public_dataset():
     """
     Downloads and extracts the Black swan public dataset.
 

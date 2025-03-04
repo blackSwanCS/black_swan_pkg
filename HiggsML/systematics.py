@@ -170,7 +170,8 @@ class V4:
             v (V4): the other V4 object
 
         Returns:
-            deltaEta (float): pseudo-rapidity difference
+            deltaPhi (float): azimuthal angle difference
+
         """
         return self.eta() - v.eta()
 
@@ -182,7 +183,7 @@ class V4:
             v (V4): the other V4 object
 
         Returns:
-            deltaR (float): delta R with another V4 object
+            deltaEta (float): pseudo-rapidity difference
         """
 
         return np.sqrt(self.deltaPhi(v) ** 2 + self.deltaEta(v) ** 2)
@@ -440,6 +441,17 @@ def mom4_manipulate(data, systTauEnergyScale, systJetEnergyScale, soft_met, seed
     return data
 
 
+def make_unweighted_set(data_set):
+    keys = ["htautau", "ztautau", "ttbar", "diboson"]
+    unweighted_set = {}
+    for key in keys:
+        unweighted_set[key] = data_set["data"][data_set["detailedlabel"] == key].sample(
+            frac=1, random_state=31415
+        )
+
+    return unweighted_set
+
+
 def postprocess(data):
     """
     Select the events with the following conditions:
@@ -499,7 +511,7 @@ def systematics(
     ttbar_scale=None,
     diboson_scale=None,
     bkg_scale=None,
-    verbose=0,
+    dopostprocess=True,
 ):
     """
     Apply systematics to the dataset
@@ -513,7 +525,6 @@ def systematics(
         * ttbar_scale (float): The scaling factor for ttbar background
         * diboson_scale (float): The scaling factor for diboson background
         * bkg_scale (float): The scaling factor for other backgrounds
-        * verbose (int): The verbosity level
 
     Returns:
         dict: The dataset with applied systematics
@@ -538,9 +549,6 @@ def systematics(
 
         data_set_new["weights"] = weights
 
-    if verbose > 0:
-        print("Tau energy rescaling :", tes)
-
     # modify primary features according to tes, jes softmet    
     data_syst = mom4_manipulate(
         data=data_set["data"].copy(),
@@ -558,10 +566,11 @@ def systematics(
         if key not in ["data","settings"]:
             data_syst[key] = data_set_new[key]
 
-    # deal with thresholds on had pt and jet pt
-    # possibly remove sub leading jet
-    # possibly remove events
-    data_syst = postprocess(data_syst)
+    if dopostprocess:
+        # deal with thresholds on had pt and jet pt
+        # possibly remove sub leading jet
+        # possibly remove events
+        data_syst = postprocess(data_syst)
 
     # build resulting dictionary
     #dict
@@ -569,8 +578,10 @@ def systematics(
     for key in data_set_new.keys():
         if key not in ["data","settings"]:
             data_syst_set[key] = data_syst.pop(key)
-    # compute DERived features        
-    data_syst_set["data"] = DER_data(data_syst)
+
+    data_syst_set["data"] = (data_syst)
+
+
     if "settings" in data_set_new.keys():
         data_syst_set["settings"] = data_set_new["settings"]
 
@@ -636,7 +647,7 @@ def get_bootstrapped_dataset(
 
         temp_data = test_set[key][new_weights > 0]
 
-        temp_data["weights"] = new_weights[new_weights > 0]
+        temp_data.loc[:, "weights"] = new_weights[new_weights > 0]
 
         pseudo_data.append(temp_data)
 
@@ -666,6 +677,77 @@ def get_systematics_dataset(
     )
 
     return data_syst
+
+
+def generate_pseudo_exp_data(data, set_mu=1.0, dict_systematics=None, seed=0):
+
+
+    if dict_systematics is None:
+        dict_systematics = {
+            "tes": False,
+            "jes": False,
+            "soft_met": False,
+            "ttbar_scale": False,
+            "diboson_scale": False,
+            "bkg_scale": False,
+        }
+
+    random_state = np.random.RandomState(seed)
+
+    if dict_systematics["tes"]:
+        tes = np.clip(random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01)
+    else:
+        tes = 1.0
+    if dict_systematics["jes"]:
+        jes = np.clip(random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01)
+    else:
+        jes = 1.0
+    if dict_systematics["soft_met"]:
+        soft_met = np.clip(
+            random_state.lognormal(mean=0.0, sigma=1.0), a_min=0.0, a_max=5.0
+        )
+    else:
+        soft_met = 0.0
+
+    if dict_systematics["ttbar_scale"]:
+        ttbar_scale = np.clip(
+            random_state.normal(loc=1.0, scale=0.02), a_min=0.8, a_max=1.2
+        )
+    else:
+        ttbar_scale = None
+
+    if dict_systematics["diboson_scale"]:
+        diboson_scale = np.clip(
+            random_state.normal(loc=1.0, scale=0.25), a_min=0.0, a_max=2.0
+        )
+    else:
+        diboson_scale = None
+
+    if dict_systematics["bkg_scale"]:
+        bkg_scale = np.clip(
+            random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01
+        )
+    else:
+        bkg_scale = None
+
+    # get bootstrapped dataset from the original test set
+    pesudo_exp_data = get_bootstrapped_dataset(
+        data,
+        mu=set_mu,
+        ttbar_scale=ttbar_scale,
+        diboson_scale=diboson_scale,
+        bkg_scale=bkg_scale,
+        seed=seed,
+    )
+        
+    test_set = get_systematics_dataset(
+        pesudo_exp_data,
+        tes=tes,
+        jes=jes,
+        soft_met=soft_met,
+    )
+    
+    return test_set
 
 
 # Assuming 'data_set' is a DataFrame with a 'weights' column

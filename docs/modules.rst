@@ -2,6 +2,6 @@ black_swan_pkg
 ==============
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
 
    HiggsML

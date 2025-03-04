@@ -1,26 +1,63 @@
 # ------------------------------------------
 # Imports
 # ------------------------------------------
-import os
-import numpy as np
-import json
-from datetime import datetime as dt
-import matplotlib.pyplot as plt
-import sys
-import io
-import base64
 
-# ------------------------------------------
-# Settings
-# ------------------------------------------
-# True when running on Codabench
-# False when running locally
+import json
+import logging
+import os
+import sys
+from datetime import datetime as dt
+
+import matplotlib.pyplot as plt
+import numpy as np
+import mpld3
+import argparse
+
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+
+
+logging.basicConfig(
+    level=getattr(
+        logging, log_level, logging.INFO
+    ),  # Fallback to INFO if the level is invalid
+    format="%(asctime)s - %(name)-20s - %(levelname) -8s - %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
 current_path = os.path.dirname(os.path.realpath(__file__))
 parent_path = os.path.dirname(current_path)
 sys.path.append(parent_path)
 
 
 class Scoring:
+    """
+    This class is used to compute the scores for the competition.
+    For more details, see the :doc:`evaluation page <../pages/evaluation>`.
+
+    Atributes:
+        * start_time (datetime): The start time of the scoring process.
+        * end_time (datetime): The end time of the scoring process.
+        * ingestion_results (list): The ingestion results.
+        * ingestion_duration (float): The ingestion duration.
+        * scores_dict (dict): The scores dictionary.
+
+    Methods:
+        * start_timer(): Start the timer.
+        * stop_timer(): Stop the timer.
+        * get_duration(): Get the duration of the scoring process.
+        * show_duration(): Show the duration of the scoring process.
+        * load_ingestion_duration(ingestion_duration_file): Load the ingestion duration.
+        * load_ingestion_results(prediction_dir="./",score_dir="./"): Load the ingestion results.
+        * compute_scores(test_settings): Compute the scores.
+        * RMSE_score(mu, mu_hat, delta_mu_hat): Compute the RMSE score.
+        * MAE_score(mu, mu_hat, delta_mu_hat): Compute the MAE score.
+        * Quantiles_Score(mu, p16, p84, eps=1e-3): Compute the Quantiles Score.
+        * write_scores(): Write the scores.
+        * save_figure(mu, p16s, p84s, set=0): Save the figure.
+
+    """
+
     def __init__(self):
         # Initialize class variables
         self.start_time = None
@@ -38,44 +75,69 @@ class Scoring:
 
     def get_duration(self):
         if self.start_time is None:
-            print("[-] Timer was never started. Returning None")
+            logger.warning("Timer was never started. Returning None")
             return None
 
         if self.end_time is None:
-            print("[-] Timer was never stoped. Returning None")
+            logger.warning("Timer was never stoped. Returning None")
             return None
 
         return self.end_time - self.start_time
 
-    def show_duration(self):
-        print("\n---------------------------------")
-        print(f"[✔] Total duration: {self.get_duration()}")
-        print("---------------------------------")
+    def load_ingestion_duration(self, ingestion_duration_file):
+        """
+        Load the ingestion duration.
 
-    def load_ingestion_duration(self,ingestion_duration_file):
-        print("[*] Reading ingestion duration")
+        Args:
+            ingestion_duration_file (str): The ingestion duration file.
+        """
+        logger.info(f"Reading ingestion duration from {ingestion_duration_file}")
+
         with open(ingestion_duration_file) as f:
             self.ingestion_duration = json.load(f)["ingestion_duration"]
 
-        print("[✔]")
+    def load_ingestion_results(self, prediction_dir="./", score_dir="./"):
+        """
+        Load the ingestion results.
 
-    def load_ingestion_results(self, prediction_dir = "./",score_dir = "./"):
-        print("[*] Reading predictions")
-        self.ingestion_results = []
+        Args:
+            prediction_dir (str, optional): location of the predictions. Defaults to "./".
+            score_dir (str, optional): location of the scores. Defaults to "./".
+        """
+        ingestion_results_with_set_index = []
         # loop over sets (1 set = 1 value of mu)
         for file in os.listdir(prediction_dir):
             if file.startswith("result_"):
+                set_index = int(
+                    file.split("_")[1].split(".")[0]
+                )  # file format: result_{set_index}.json
                 results_file = os.path.join(prediction_dir, file)
                 with open(results_file) as f:
-                    self.ingestion_results.append(json.load(f))
-        
+                    ingestion_results_with_set_index.append(
+                        {"set_index": set_index, "results": json.load(f)}
+                    )
+        ingestion_results_with_set_index = sorted(
+            ingestion_results_with_set_index, key=lambda x: x["set_index"]
+        )
+        self.ingestion_results = [
+            x["results"] for x in ingestion_results_with_set_index
+        ]
+
         self.score_file = os.path.join(score_dir, "scores.json")
         self.html_file = os.path.join(score_dir, "detailed_results.html")
-
-        print("[✔]")
+        self.score_dir = score_dir
+        logger.info(f"Read ingestion results from {prediction_dir}")
+        html_heading("Detailed Results", self.html_file)
 
     def compute_scores(self, test_settings):
-        print("[*] Computing scores")
+        """
+        Compute the scores for the competition based on the test settings.
+
+        Args:
+            test_settings (dict): The test settings.
+        """
+
+        logger.info("Computing scores")
 
         # loop over ingestion results
         rmses, maes = [], []
@@ -84,8 +146,7 @@ class Scoring:
         for i in range(len(self.ingestion_results)):
             ingestion_result = self.ingestion_results[i]
             mu = test_settings["ground_truth_mus"][i]
-            
-            print(f"[*] mu_hats: {ingestion_result}")
+
             mu_hats = ingestion_result["mu_hats"]
             delta_mu_hats = ingestion_result["delta_mu_hats"]
             p16s = ingestion_result["p16"]
@@ -106,16 +167,16 @@ class Scoring:
             set_mae = np.mean(set_maes)
             set_rmse = np.mean(set_rmses)
 
-            self._print("------------------")
-            self._print(f"Set {i}")
-            self._print("------------------")
-            self._print(f"MAE (avg): {set_mae}")
-            self._print(f"RMSE (avg): {set_rmse}")
-            self._print(f"Interval: {set_interval}")
-            self._print(f"Coverage: {set_coverage}")
-            self._print(f"Quantiles Score: {set_quantiles_score}")
+            result_text = f"Set {i} \nMAE: {set_mae} \nRMSE: {set_rmse} \nInterval: {set_interval} \nCoverage: {set_coverage} \nQuantiles Score: {set_quantiles_score}"
 
-            self.save_figure(mu=np.mean(mu_hats), p16s=p16s, p84s=p84s, set=i)
+            self.save_figure(
+                mu=np.mean(mu_hats),
+                p16s=p16s,
+                p84s=p84s,
+                set=i,
+                true_mu=mu,
+                result_text=result_text,
+            )
 
             # Save set scores in lists
             rmses.append(set_rmse)
@@ -136,20 +197,19 @@ class Scoring:
             "ingestion_duration": self.ingestion_duration,
         }
 
-        self._print("\n\n==================")
-        self._print("Overall Score")
-        self._print("==================")
-        self._print(f"[*] --- RMSE: {round(np.mean(rmses), 3)}")
-        self._print(f"[*] --- MAE: {round(np.mean(maes), 3)}")
-        self._print(f"[*] --- Interval: {round(overall_interval, 3)}")
-        self._print(f"[*] --- Coverage: {round(overall_coverage, 3)}")
-        self._print(f"[*] --- Quantiles score: {round(overall_quantiles_score, 3)}")
-        self._print(f"[*] --- Ingestion duration: {self.ingestion_duration}")
-
+        overall_result_text = f"Overall Score \n================\nRMSE: {round(np.mean(rmses), 3)} \nMAE: {round(np.mean(maes), 3)} \nInterval: {round(overall_interval, 3)} \nCoverage: {round(overall_coverage, 3)} \nQuantiles score: {round(overall_quantiles_score, 3)} \nIngestion duration: {self.ingestion_duration}"
+        html_text(overall_result_text, self.html_file, font_size="30px")
         print("[✔]")
 
     def RMSE_score(self, mu, mu_hat, delta_mu_hat):
-        """Compute the sum of MSE and MSE2."""
+        """
+        Compute the root mean squared error between the true value mu and the predicted value mu_hat.
+
+        Args:
+            * mu (float): The true value.
+            * mu_hat (np.array): The predicted value.
+            * delta_mu_hat (np.array): The uncertainty on the predicted value.
+        """
 
         def MSE(mu, mu_hat):
             """Compute the mean squared error between scalar mu and vector mu_hat."""
@@ -163,7 +223,14 @@ class Scoring:
         return np.sqrt(MSE(mu, mu_hat) + MSE2(mu, mu_hat, delta_mu_hat))
 
     def MAE_score(self, mu, mu_hat, delta_mu_hat):
-        """Compute the sum of MAE and MAE2."""
+        """
+        Compute the mean absolute error between the true value mu and the predicted value mu_hat.
+
+        Args:
+            * mu (float): The true value.
+            * mu_hat (np.array): The predicted value.
+            * delta_mu_hat (np.array): The uncertainty on the predicted value
+        """
 
         def MAE(mu, mu_hat):
             """Compute the mean absolute error between scalar mu and vector mu_hat."""
@@ -177,10 +244,22 @@ class Scoring:
         return MAE(mu, mu_hat) + MAE2(mu, mu_hat, delta_mu_hat)
 
     def Quantiles_Score(self, mu, p16, p84, eps=1e-3):
+        """
+        Compute the quantiles score based on the true value mu and the quantiles p16 and p84.
+
+        Args:
+            * mu (array): The true ${\\mu} value.
+            * p16 (array): The 16th percentile.
+            * p84 (array): The 84th percentile.
+            * eps (float, optional): A small value to avoid division by zero. Defaults to 1e-3.
+        """
 
         def Interval(p16, p84):
             """Compute the average of the intervals defined by vectors p16 and p84."""
-            return np.mean(np.abs(p84 - p16))
+            interval = np.mean(p84 - p16)
+            if interval < 0:
+                logger.warning(f"Interval is negative: {interval}")
+            return np.mean(abs(p84 - p16))
 
         def Coverage(mu, p16, p84):
             """Compute the fraction of times scalar mu is within intervals defined by vectors p16 and p84."""
@@ -204,45 +283,112 @@ class Scoring:
         return interval, coverage, score
 
     def write_scores(self):
-        print("[*] Writing scores")
+
+        logger.info(f"Writing scores to {self.score_file}")
 
         with open(self.score_file, "w") as f_score:
             f_score.write(json.dumps(self.scores_dict, indent=4))
 
-        print("[✔]")
+    def save_figure(self, mu, p16s, p84s, set=0, true_mu=None, result_text=None):
+        """
+        Save the figure of the mu distribution.
 
-    def write_html(self, content):
-        with open(self.html_file, "a", encoding="utf-8") as f:
-            f.write(content)
-
-    def _print(self, content):
-        print(content)
-        self.write_html(content + "<br>")
-
-    def save_figure(self, mu, p16s, p84s, set=0):
-        fig = plt.figure(figsize=(5, 5))
+        Args:
+            * mu (array): The true ${\\mu} value.
+            * p16 (array): The 16th percentile.
+            * p84 (array): The 84th percentile.
+            * set (int, optional): The set number. Defaults to 0.
+        """
+        plt.figure(figsize=(5, 5))
         # plot horizontal lines from p16 to p84
         for i, (p16, p84) in enumerate(zip(p16s, p84s)):
-            plt.hlines(y=i, xmin=p16, xmax=p84, colors="b")
+            if p16 > p84:
+                p16, p84 = 0, 0
+            if i == 0:
+                plt.hlines(
+                    y=i, xmin=p16, xmax=p84, colors="b", label="Coverage interval"
+                )
+            else:
+                plt.hlines(y=i, xmin=p16, xmax=p84, colors="b")
         plt.vlines(
             x=mu,
             ymin=0,
             ymax=len(p16s),
             colors="r",
             linestyles="dashed",
-            label="average $\mu$",
+            label="average $\\mu$",
         )
-        plt.xlabel("mu")
-        plt.ylabel("psuedo-experiments")
-        plt.title(f"mu distribution - Set {set}")
-        plt.legend()
+        if true_mu is not None:
+            plt.vlines(
+                x=true_mu,
+                ymin=0,
+                ymax=len(p16s),
+                colors="g",
+                linestyles="dashed",
+                label="true $\\mu$",
+            )
 
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png")
-        buf.seek(0)
-        fig_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        plt.xlabel("$\\mu$", fontdict={"size": 14})
+        plt.ylabel("pseudo-experiments", fontdict={"size": 14})
+        plt.xticks(fontsize=14)  # Set the x-tick font size
+        plt.yticks(fontsize=14)  # Set the y-tick font size
+        plt.title(f"Set {set}", fontdict={"size": 14})
 
-        self.write_html(f"<img src='data:image/png;base64,{fig_b64}'><br>")
+        plt.legend(loc="upper left", bbox_to_anchor=(1, 1), fontsize=12)
+        plt.grid()
+        plt.tight_layout()
+
+        if result_text is None:
+            result_text = f"Set {set} - $\\mu$ distribution"
+
+        save_plot_to_html(plt, self.html_file, result_text, append=True)
+
+
+def html_text(text, html_fle, font_size="20px"):
+    formatted_text = text.replace("\n", "<br>")
+    bar_html = f"""
+    </div>
+            <div style="display: flex; background-color: lightyellow; padding: 10px; justify-content: center; align-items: center;">
+            <div style="border: 1px solid black; padding: 10px; font-size: {font_size};">{formatted_text}</div>
+    </div>
+    """
+    with open(html_fle, "a") as f:
+        f.write(bar_html)
+
+
+def save_plot_to_html(plt, html_file, text, append=False):
+    fig = plt.gcf()  # Get the current figure
+    html_str = mpld3.fig_to_html(fig)
+    formatted_text = text.replace("\n", "<br>")
+    centered_html_str = f"""
+    <div style="border: 2px solid black; padding: 10px;">
+        <div style="display: flex; justify-content: center; align-items: center;">
+            <div style="margin-right: 20px;">{html_str}</div>
+            <div style="border: 1px solid black; padding: 10px; font-size: 30px;">{formatted_text}</div>
+        </div>
+    </div>
+    """
+    if append:
+        with open(html_file, "a") as f:
+            f.write(centered_html_str)
+    else:
+        bar_html = """
+        <div style="background-color: lightgray; padding: 10px; text-align: center; font-size: 20px;">
+            Detailed Results
+        </div>
+        """
+        with open(html_file, "w") as f:
+            f.write(centered_html_str)
+
+
+def html_heading(heading, html_file):
+    heading_html = f"""
+    <div style="background-color: lightgray; padding: 10px; text-align: center; font-size: 20px;">
+        {heading}
+    </div>
+    """
+    with open(html_file, "w") as f:
+        f.write(heading_html)
 
 
 if __name__ == "__main__":
@@ -250,32 +396,95 @@ if __name__ == "__main__":
     print("### Scoring Program")
     print("############################################\n")
 
+root_dir_name = os.path.dirname(os.path.realpath(__file__))
 
-    # Init scoring
-    scoring = Scoring()
+parser = argparse.ArgumentParser(
+    description="This is script to generate data for the HEP competition."
+)
+parser.add_argument(
+    "--prediction",
+    "-p",
+    type=pathlib.Path,
+    help="Prediction file location",
+    default=os.path.join(root_dir_name, "sample_result_submission"),
+)
+parser.add_argument(
+    "--output",
+    "-o",
+    help="Output file location",
+    default=os.path.join(root_dir_name, "scoring_output"),
+)
+parser.add_argument(
+    "--reference",
+    "-r",
+    help="Reference file location",
+    default=os.path.join(root_dir_name, "reference_data"),
+)
+parser.add_argument(
+    "--codabench",
+    help="True when running on Codabench",
+    action="store_true",
+)
+args = parser.parse_args()
 
-    # Start timer
-    scoring.start_timer()
+if not args.codabench:
+    prediction_dir = args.prediction
+    output_dir = args.output
+    reference_dir = args.reference
+    program_dir = os.path.join(root_dir_name, "ingestion_program")
+else:
+    prediction_dir = "/app/input/res"
+    output_dir = "/app/output"
+    reference_dir = "/app/input/ref"
+    program_dir = os.path.join(root_dir_name, "ingestion_program")
+
+sys.path.append(program_dir)
+
+settings_file = os.path.join(prediction_dir, "test_settings.json")
+print(settings_file)
+try:
+    with open(settings_file) as f:
+        test_settings = json.load(f)
+except FileNotFoundError:
+    settings_file = os.path.join(reference_dir, "settings", "data.json")
+    try:
+        with open(settings_file) as f:
+            test_settings = json.load(f)
+    except FileNotFoundError:
+        print("Settings file not found. Please provide the settings file.")
+        sys.exit(1)
 
 
-    # Load ingestion duration
-    scoring.load_ingestion_duration()
+from HiggsML.score import Scoring
 
-    # Load ingestions results
-    scoring.load_ingestion_results()
 
-    # Compute Scores
-    scoring.compute_scores()
+# Init scoring
+scoring = Scoring()
 
-    # Write scores
-    scoring.write_scores()
+# Start timer
+scoring.start_timer()
 
-    # Stop timer
-    scoring.stop_timer()
+# Load ingestion duration
+ingestion_duration_file = os.path.join(prediction_dir, "ingestion_duration.json")
+scoring.load_ingestion_duration(ingestion_duration_file)
 
-    # Show duration
-    scoring.show_duration()
+print(prediction_dir)
 
-    print("\n----------------------------------------------")
-    print("[✔] Scoring Program executed successfully!")
-    print("----------------------------------------------\n\n")
+# Load ingestions results
+scoring.load_ingestion_results(prediction_dir, output_dir)
+
+# Compute Scores
+scoring.compute_scores(test_settings)
+
+# Write scores
+scoring.write_scores()
+
+# Stop timer
+scoring.stop_timer()
+
+# Show duration
+scoring.show_duration()
+
+print("\n----------------------------------------------")
+print("[✔] Scoring Program executed successfully!")
+print("----------------------------------------------\n\n")

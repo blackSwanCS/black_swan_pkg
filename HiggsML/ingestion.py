@@ -6,36 +6,28 @@ import os
 from datetime import datetime as dt
 import json
 from itertools import product
-import warnings
+import logging
 
-warnings.filterwarnings("ignore")
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+
+
+logging.basicConfig(
+    level=getattr(
+        logging, log_level, logging.INFO
+    ),  # Fallback to INFO if the level is invalid
+    format="%(asctime)s - %(name)-20s - %(levelname) -8s - %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
 DEFAULT_INGESTION_SEED = 31415
+
+from HiggsML.systematics import generate_pseudo_exp_data
 
 # ------------------------------------------
 # Ingestion Class
 # ------------------------------------------
 
-def _generate_pseudo_exp_data(data, set_mu=1, tes=1.0, jes=1.0, soft_met=0.0, ttbar_scale=None, diboson_scale=None, bkg_scale=None, seed=0):
-
-        from systematics import get_bootstrapped_dataset, get_systematics_dataset
-
-        # get bootstrapped dataset from the original test set
-        pesudo_exp_data = get_bootstrapped_dataset(
-            data,
-            mu=set_mu,
-            ttbar_scale=ttbar_scale,
-            diboson_scale=diboson_scale,
-            bkg_scale=bkg_scale,
-            seed=seed,
-        )
-        test_set = get_systematics_dataset(
-            pesudo_exp_data,
-            tes=tes,
-            jes=jes,
-            soft_met=soft_met,
-        )
-
-        return test_set
 
 class Ingestion:
     """
@@ -83,11 +75,11 @@ class Ingestion:
             timedelta: The duration of the ingestion process.
         """
         if self.start_time is None:
-            print("[-] Timer was never started. Returning None")
+            logger.warning("Timer was never started. Returning None")
             return None
 
         if self.end_time is None:
-            print("[-] Timer was never stopped. Returning None")
+            logger.warning("Timer was never stopped. Returning None")
             return None
 
         return self.end_time - self.start_time
@@ -114,14 +106,14 @@ class Ingestion:
             with open(duration_file, "w") as f:
                 f.write(json.dumps({"ingestion_duration": duration_in_mins}, indent=4))
 
-    def load_train_set(self):
+    def load_train_set(self, **kwargs):
         """
         Load the training set.
 
         Returns:
             object: The loaded training set.
         """
-        self.data.load_train_set()
+        self.data.load_train_set(**kwargs)
         return self.data.get_train_set()
 
     def init_submission(self, Model):
@@ -131,7 +123,7 @@ class Ingestion:
         Args:
             Model (object): The model class.
         """
-        print("[*] Initializing Submitted Model")
+        logger.info("Initializing Submmited Model")
         from HiggsML.systematics import systematics
 
         self.model = Model(get_train_set=self.load_train_set, systematics=systematics)
@@ -141,18 +133,19 @@ class Ingestion:
         """
         Fit the submitted model.
         """
-        print("[*] Calling fit method of submitted model")
+        logger.info("Calling fit method of submitted model")
         self.model.fit()
-        
 
-    def predict_submission(self, test_settings,initial_seed = DEFAULT_INGESTION_SEED):
+    def predict_submission(self, test_settings, initial_seed=DEFAULT_INGESTION_SEED):
         """
         Make predictions using the submitted model.
 
         Args:
             test_settings (dict): The test settings.
         """
-        print("[*] Calling predict method of submitted model")
+        logger.info(
+            "Calling predict method of submitted model with seed: %s", initial_seed
+        )
 
         dict_systematics = test_settings["systematics"]
         num_pseudo_experiments = test_settings["num_pseudo_experiments"]
@@ -181,50 +174,20 @@ class Ingestion:
             # get mu value of set from test settings
             set_mu = test_settings["ground_truth_mus"][set_index]
 
-            random_state = np.random.RandomState(seed)
+            test_set = generate_pseudo_exp_data(
+                full_test_set, set_mu, dict_systematics, seed
+            )
 
-            if dict_systematics["tes"]:
-                tes = np.clip(random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01)
-            else:
-                tes = 1.0
-            if dict_systematics["jes"]:
-                jes = np.clip(random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01)
-            else:
-                jes = 1.0
-            if dict_systematics["soft_met"]:
-                soft_met = np.clip(random_state.lognormal(mean=0.0, sigma=1.0), a_min=0.0, a_max=5.0)
-            else:
-                soft_met = 0.0
-
-            if dict_systematics["ttbar_scale"]:
-                ttbar_scale = np.clip(random_state.normal(loc=1.0, scale=0.02), a_min=0.8, a_max=1.2)
-            else:
-                ttbar_scale = None
-
-            if dict_systematics["diboson_scale"]:
-                diboson_scale = np.clip(random_state.normal(loc=1.0, scale=0.25), a_min=0.0, a_max=2.0)
-            else:
-                diboson_scale = None
-
-            if dict_systematics["bkg_scale"]:
-                bkg_scale = np.clip(random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01)
-            else:
-                bkg_scale = None
-
-            test_set = _generate_pseudo_exp_data(full_test_set,
-                set_mu=set_mu,
-                tes=tes,
-                jes=jes,
-                soft_met=soft_met,
-                ttbar_scale=ttbar_scale,
-                diboson_scale=diboson_scale,
-                bkg_scale=bkg_scale,
-                seed=seed,
+            logger.debug(
+                f"set_index: {set_index} - test_set_index: {test_set_index} - seed: {seed}"
             )
 
             predicted_dict = self.model.predict(test_set)
             predicted_dict["test_set_index"] = test_set_index
 
+            logger.debug(
+                f"mu_hat: {predicted_dict['mu_hat']} - delta_mu_hat: {predicted_dict['delta_mu_hat']} - p16: {predicted_dict['p16']} - p84: {predicted_dict['p84']}"
+            )
 
             if set_index not in self.results_dict:
                 self.results_dict[set_index] = []
@@ -234,7 +197,7 @@ class Ingestion:
         """
         Compute the ingestion result.
         """
-        print("[*] Saving ingestion result")
+        logger.info("Computing Ingestion Result")
 
         # loop over sets
         for key in self.results_dict.keys():
