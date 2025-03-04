@@ -3,7 +3,7 @@ name: Build Sphinx Documentation
 on:
     push:
         branches:
-            - updatingdocs
+            - updating_docs
     pull_request:
         branches:
             - main
