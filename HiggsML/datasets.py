@@ -248,6 +248,7 @@ class Data:
         """
         Deletes the train dataset.
         """
+        
         del self.__train_set
 
 
