@@ -16,7 +16,6 @@ setuptools
 pathlib
 logging
 datetime
-json
 os
 sys
 io
