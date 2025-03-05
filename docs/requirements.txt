@@ -1,3 +1,13 @@
 sphinx
 sphinx_rtd_theme
- myst-parser
+myst-parser
+hatchling
+numpy
+mpld3
+pandas
+scikit-learn
+matplotlib
+seaborn
+pyarrow
+requests
+setuptools
