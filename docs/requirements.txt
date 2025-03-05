@@ -14,7 +14,6 @@ pyarrow
 requests
 setuptools
 pathlib
-zipfile
 logging
 itertools
 datetime
