@@ -1,13 +1,13 @@
 name: Build Sphinx Documentation
 
 on:
-    push:
-        branches:
-            - main
-            - develop
-    pull_request:
-        branches:
-            - main
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -16,28 +16,24 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.x'
+          python-version: '3.9'  # Specify a concrete version
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install sphinx
-          pip install sphinx_rtd_theme
-          pip install myst-parser
-
+          pip install -r requirements.txt  # Use a requirements file if available
+          pip install sphinx sphinx_rtd_theme myst-parser
 
       - name: Build documentation
         run: |
           cd docs
           make html
 
-      - name: Deploy to GitHub Pages
+      - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v2
         with:
           path: "docs/_build/html"
