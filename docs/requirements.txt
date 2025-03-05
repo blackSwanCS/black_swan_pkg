@@ -15,8 +15,4 @@ requests
 setuptools
 pathlib
 logging
-datetime
-os
-sys
-io
 HiggsML
