@@ -4,56 +4,51 @@ on:
     push:
         branches:
             - main
+            - develop
     pull_request:
         branches:
             - main
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-              with:
-                token: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Set up Python
-              uses: actions/setup-python@v2
-              with:
-                python-version: '3.x'
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
 
-            - name: Install dependencies
-              run: |
-                python -m pip install --upgrade pip
-                pip install sphinx
-                pip install sphinx_rtd_theme
-                pip install myst-parser
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install sphinx
+          pip install sphinx_rtd_theme
+          pip install myst-parser
 
 
-            - name: Build documentation
-              run: |
-                cd docs
-                make html
+      - name: Build documentation
+        run: |
+          cd docs
+          make html
 
-            # Step 7: Configure Git
-            - name: Configure Git
-              run: |
-                git config --global user.name "GitHub Actions"
-                git config --global user.email "actions@github.com"
+      - name: Deploy to GitHub Pages
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: "docs/_build/html"
 
-            # Step 8: Add and Commit Changes
-            - name: Commit built documentation
-              run: |
-                git checkout -b update_docs
-                git add .
-                if git diff-index --quiet HEAD; then
-                echo "No changes to commit."
-                exit 0
-                fi
-                git commit -m "Auto-build Sphinx documentation"
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
 
-            # Step 9: Push Changes
-            - name: Push changes
-              run: |
-                git push --set-upstream origin update_docs
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v2
