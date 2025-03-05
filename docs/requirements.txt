@@ -15,7 +15,6 @@ requests
 setuptools
 pathlib
 logging
-itertools
 datetime
 json
 os
