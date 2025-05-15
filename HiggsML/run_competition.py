@@ -39,11 +39,7 @@ parser.add_argument(
     help="True when running on Codabench",
     action="store_true",
 )
-parser.add_argument(
-    "--use-random-mus",
-    help="Use random mus for testing",
-    action="store_true",
-)
+
 parser.add_argument(
     "--systematics-tes",
     action="store_true",
@@ -60,10 +56,17 @@ parser.add_argument(
     help="Whether to use soft_met systematics",
 )
 parser.add_argument(
-    "--systematics-w-scale",
+    "--systematics-ttbar-scale",
     action="store_true",
-    help="Whether to use w_scale systematics",
+    help="Whether to use ttbar_scale systematics",
 )
+
+parser.add_argument(
+    "--systematics-diboson-scale",
+    action="store_true",
+    help="Whether to use diboson_scale systematics",
+)
+
 parser.add_argument(
     "--systematics-bkg-scale",
     action="store_true",
@@ -124,7 +127,8 @@ test_settings["systematics"] = {
     "tes": args.systematics_tes,
     "jes": args.systematics_jes,
     "soft_met": args.systematics_soft_met,
-    "w_scale": args.systematics_w_scale,
+    "ttbar_scale": args.systematics_ttbar_scale,
+    "diboson_scale": args.systematics_diboson_scale,
     "bkg_scale": args.systematics_bkg_scale,
 }
 
@@ -134,16 +138,13 @@ test_settings["num_of_sets"] = args.num_of_sets
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-if args.use_random_mus:
-    test_settings["ground_truth_mus"] = (
-        np.random.uniform(0.1, 3, test_settings["num_of_sets"])
-    ).tolist()
-    test_settings["random_mu"] = True
-    random_settings_file = os.path.join(output_dir, "test_settings.json")
-    with open(random_settings_file, "w") as f:
-        json.dump(test_settings, f)
-else:
-    test_settings["ground_truth_mus"] = data.ground_truth_mus
+test_settings["ground_truth_mus"] = (
+    np.random.uniform(0.1, 3, test_settings["num_of_sets"])
+).tolist()
+
+random_settings_file = os.path.join(output_dir, "test_settings.json")
+with open(random_settings_file, "w") as f:
+    json.dump(test_settings, f)
 
 # load test data
 data.load_test_set()

@@ -93,8 +93,24 @@ class Scoring:
         """
         logger.info(f"Reading ingestion duration from {ingestion_duration_file}")
 
-        with open(ingestion_duration_file) as f:
-            self.ingestion_duration = json.load(f)["ingestion_duration"]
+        try:
+            with open(ingestion_duration_file) as f:
+                self.ingestion_duration = json.load(f)["ingestion_duration"]
+        except FileNotFoundError:
+            logger.warning(
+                f"File {ingestion_duration_file} not found. Setting ingestion duration to 0."
+            )
+            self.ingestion_duration = 0
+        except json.JSONDecodeError:
+            logger.warning(
+                f"File {ingestion_duration_file} is not a valid JSON file. Setting ingestion duration to 0."
+            )
+            self.ingestion_duration = 0
+        except Exception as e:
+            logger.warning(
+                f"Error reading file {ingestion_duration_file}: {e}. Setting ingestion duration to 0."
+            )
+            self.ingestion_duration = 0
 
     def load_ingestion_results(self, prediction_dir="./", score_dir="./"):
         """
@@ -149,8 +165,8 @@ class Scoring:
 
             mu_hats = ingestion_result["mu_hats"]
             delta_mu_hats = ingestion_result["delta_mu_hats"]
-            p16s = ingestion_result["p16"]
-            p84s = ingestion_result["p84"]
+            p16s = ingestion_result["p16s"]
+            p84s = ingestion_result["p84s"]
 
             all_mus.extend(np.repeat(mu, len(p16s)))
             all_p16s.extend(p16s)
@@ -389,6 +405,8 @@ def html_heading(heading, html_file):
     """
     with open(html_file, "w") as f:
         f.write(heading_html)
+        
+    
 
 
 if __name__ == "__main__":
@@ -396,95 +414,94 @@ if __name__ == "__main__":
     print("### Scoring Program")
     print("############################################\n")
 
-root_dir_name = os.path.dirname(os.path.realpath(__file__))
+    import pathlib
 
-parser = argparse.ArgumentParser(
-    description="This is script to generate data for the HEP competition."
-)
-parser.add_argument(
-    "--prediction",
-    "-p",
-    type=pathlib.Path,
-    help="Prediction file location",
-    default=os.path.join(root_dir_name, "sample_result_submission"),
-)
-parser.add_argument(
-    "--output",
-    "-o",
-    help="Output file location",
-    default=os.path.join(root_dir_name, "scoring_output"),
-)
-parser.add_argument(
-    "--reference",
-    "-r",
-    help="Reference file location",
-    default=os.path.join(root_dir_name, "reference_data"),
-)
-parser.add_argument(
-    "--codabench",
-    help="True when running on Codabench",
-    action="store_true",
-)
-args = parser.parse_args()
+    root_dir_name = os.path.dirname(os.path.realpath(__file__))
 
-if not args.codabench:
-    prediction_dir = args.prediction
-    output_dir = args.output
-    reference_dir = args.reference
-    program_dir = os.path.join(root_dir_name, "ingestion_program")
-else:
-    prediction_dir = "/app/input/res"
-    output_dir = "/app/output"
-    reference_dir = "/app/input/ref"
-    program_dir = os.path.join(root_dir_name, "ingestion_program")
+    parser = argparse.ArgumentParser(
+        description="This is script to generate data for the HEP competition."
+    )
+    parser.add_argument(
+        "--prediction",
+        "-p",
+        type=pathlib.Path,
+        help="Prediction file location",
+        default=os.path.join(root_dir_name, "sample_result_submission"),
+    )
+    parser.add_argument(
+        "--output",
+        "-o",
+        help="Output file location",
+        default=os.path.join(root_dir_name, "scoring_output"),
+    )
+    parser.add_argument(
+        "--reference",
+        "-r",
+        help="Reference file location",
+        default=os.path.join(root_dir_name, "reference_data"),
+    )
+    parser.add_argument(
+        "--codabench",
+        help="True when running on Codabench",
+        action="store_true",
+    )
+    args = parser.parse_args()
 
-sys.path.append(program_dir)
+    if not args.codabench:
+        prediction_dir = args.prediction
+        output_dir = args.output
+        reference_dir = args.reference
+        program_dir = os.path.join(root_dir_name, "ingestion_program")
+    else:
+        prediction_dir = "/app/input/res"
+        output_dir = "/app/output"
+        reference_dir = "/app/input/ref"
+        program_dir = os.path.join(root_dir_name, "ingestion_program")
 
-settings_file = os.path.join(prediction_dir, "test_settings.json")
-print(settings_file)
-try:
-    with open(settings_file) as f:
-        test_settings = json.load(f)
-except FileNotFoundError:
-    settings_file = os.path.join(reference_dir, "settings", "data.json")
+    sys.path.append(program_dir)
+
+    settings_file = os.path.join(prediction_dir, "test_settings.json")
+    print(settings_file)
     try:
         with open(settings_file) as f:
             test_settings = json.load(f)
     except FileNotFoundError:
-        print("Settings file not found. Please provide the settings file.")
-        sys.exit(1)
+        settings_file = os.path.join(reference_dir, "settings", "data.json")
+        try:
+            with open(settings_file) as f:
+                test_settings = json.load(f)
+        except FileNotFoundError:
+            print("Settings file not found. Please provide the settings file.")
+            sys.exit(1)
 
 
-from HiggsML.score import Scoring
+    from HiggsML.score import Scoring
 
 
-# Init scoring
-scoring = Scoring()
+    # Init scoring
+    scoring = Scoring()
 
-# Start timer
-scoring.start_timer()
+    # Start timer
+    scoring.start_timer()
 
-# Load ingestion duration
-ingestion_duration_file = os.path.join(prediction_dir, "ingestion_duration.json")
-scoring.load_ingestion_duration(ingestion_duration_file)
+    # Load ingestion duration
+    ingestion_duration_file = os.path.join(prediction_dir, "ingestion_duration.json")
+    scoring.load_ingestion_duration(ingestion_duration_file)
 
-print(prediction_dir)
+    print(prediction_dir)
 
-# Load ingestions results
-scoring.load_ingestion_results(prediction_dir, output_dir)
+    # Load ingestions results
+    scoring.load_ingestion_results(prediction_dir, output_dir)
 
-# Compute Scores
-scoring.compute_scores(test_settings)
+    # Compute Scores
+    scoring.compute_scores(test_settings)
 
-# Write scores
-scoring.write_scores()
+    # Write scores
+    scoring.write_scores()
 
-# Stop timer
-scoring.stop_timer()
+    # Stop timer
+    scoring.stop_timer()
 
-# Show duration
-scoring.show_duration()
-
-print("\n----------------------------------------------")
-print("[✔] Scoring Program executed successfully!")
-print("----------------------------------------------\n\n")
+    print("\n----------------------------------------------")
+    print("[✔] Scoring Program executed successfully!")
+    print("----------------------------------------------\n\n")
