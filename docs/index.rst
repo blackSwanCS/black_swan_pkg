@@ -5,52 +5,12 @@
 
 Welcome to HiggsML Package's documentation!
 ===========================================
-Module contents
----------------
 
-.. automodule:: HiggsML
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
 
-
-Submodules
-----------------
-
-HiggsML.datasets module
------------------------
-
-.. automodule:: HiggsML.datasets
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-HiggsML.ingestion module
-------------------------
-
-.. automodule:: HiggsML.ingestion
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-
-HiggsML.score module
---------------------
-
-.. automodule:: HiggsML.score
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-HiggsML.visualization module
-----------------------------
-
-.. automodule:: HiggsML.visualization
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
+   HiggsML
 
 Indices and tables
 ==================
