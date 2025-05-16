@@ -5,6 +5,9 @@
 
 import sys, os
 
+current_dir = os.path.abspath(os.path.dirname(__file__))
+image_dir = os.path.join(current_dir, "images")
+
 sys.path.insert(0, os.path.abspath('../'))
 
 # -- Project information -----------------------------------------------------
