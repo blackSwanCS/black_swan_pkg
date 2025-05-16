@@ -5,6 +5,17 @@
 
 Welcome to HiggsML Package's documentation!
 ===========================================
+Module contents
+---------------
+
+.. automodule:: HiggsML
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Submodules
+----------------
 
 HiggsML.datasets module
 -----------------------
@@ -36,14 +47,6 @@ HiggsML.visualization module
 ----------------------------
 
 .. automodule:: HiggsML.visualization
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: HiggsML
    :members:
    :undoc-members:
    :show-inheritance:
