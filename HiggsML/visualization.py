@@ -6,6 +6,20 @@ from sklearn.metrics import roc_curve
 from IPython.display import display
 from sklearn.metrics import roc_auc_score
 from tabulate import tabulate
+import os
+import logging
+
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+
+
+logging.basicConfig(
+    level=getattr(
+        logging, log_level, logging.INFO
+    ),  # Fallback to INFO if the level is invalid
+    format="%(asctime)s - %(name)-20s - %(levelname) -8s - %(message)s",
+)
+
+logger = logging.getLogger(__name__)
 
 class Dataset_visualise:
     """
@@ -37,7 +51,6 @@ class Dataset_visualise:
 
     def __init__(self, data_set, name="dataset", columns=None):
         print("\nGeneral Structure of the data object is a dictionary")
-        custom_pretty_print(data_set)
         
         self.target = data_set["labels"]
         self.weights = data_set["weights"]
@@ -46,8 +59,16 @@ class Dataset_visualise:
             self.columns = [col for col in data_set.columns if col != "detailed_labels"]
         else:
             self.columns = columns
-
-        self.dfall = pd.DataFrame(data_set, columns=self.columns)
+        
+        if isinstance(data_set, pd.DataFrame):            
+            self.dfall = pd.DataFrame(data_set, columns=self.columns)
+        elif isinstance(data_set, dict):
+            self.dfall = pd.DataFrame(data_set["data"], columns=self.columns)
+        else:
+            raise ValueError("data_set must be a DataFrame or a dictionary containing 'data' and 'labels' keys.")
+        
+        custom_pretty_print(self.dfall)
+        
         self.name = name
         self.keys = np.unique(self.detailed_label)
         self.weight_keys = {}
@@ -103,6 +124,14 @@ class Dataset_visualise:
         
         if columns is None:
             columns = self.columns
+        else:
+            for col in columns:
+                if col not in self.columns:
+                    logger.warning(f"Column {col} not found in dataset. Skipping.")
+                    columns.remove(col)
+        if len(columns) == 0:
+            raise ValueError("No valid columns provided for histogram plotting.")
+
         sns.set_theme(style="whitegrid")
 
         df = pd.DataFrame(self.dfall, columns=columns)
@@ -169,10 +198,20 @@ class Dataset_visualise:
 
         .. Image:: ../images/correlation_plots.png
         """
-        caption = ["Signal feature", "Background feature"]
+        
         if columns is None:
             columns = self.columns
+        else:
+            for col in columns:
+                if col not in self.columns:
+                    logger.warning(f"Column {col} not found in dataset. Skipping.")
+                    columns.remove(col)
+        if len(columns) == 0:
+            raise ValueError("No valid columns provided for histogram plotting.")
+        
         sns.set_theme(rc={"figure.figsize": (10, 10)}, style="whitegrid")
+
+        caption = ["Signal feature", "Background feature"]
 
         for i in range(2):
 
@@ -196,6 +235,14 @@ class Dataset_visualise:
         """
         if columns is None:
             columns = self.columns
+        else:
+            for col in columns:
+                if col not in self.columns:
+                    logger.warning(f"Column {col} not found in dataset. Skipping.")
+                    columns.remove(col)
+        if len(columns) == 0:
+            raise ValueError("No valid columns provided for histogram plotting.")
+        
         df_sample = self.dfall[columns].copy()
         df_sample["Label"] = self.target
 
@@ -240,6 +287,10 @@ class Dataset_visualise:
 
         .. Image:: ../images/stacked_histogram.png
         """
+        if field_name not in self.columns:
+            logger.error(f"Field {field_name} not found in dataset.")
+            raise ValueError(f"Field {field_name} not found in dataset.")
+        
         field = self.dfall[field_name]
         sns.set_theme(rc={"figure.figsize": (8, 7)}, style="whitegrid")
 
@@ -299,7 +350,7 @@ class Dataset_visualise:
         plt.yscale(y_scale)
         plt.show()
 
-    def pair_plots_syst(self, df_syst, sample_size=100):
+    def pair_plots_syst(self, df_syst, sample_size=100,columns=None):
         """
         Plots pair plots between the dataset and a system dataset.
 
@@ -309,8 +360,19 @@ class Dataset_visualise:
         
         ..images:: ../images/pair_plot_syst.png
         """
-        df_sample = self.dfall[self.columns].copy()
-        df_sample_syst = df_syst[self.columns].copy()
+        
+        if columns is None:
+            columns = self.columns
+        else:
+            for col in columns:
+                if col not in self.columns:
+                    logger.warning(f"Column {col} not found in dataset. Skipping.")
+                    columns.remove(col)
+        if len(columns) == 0:
+            raise ValueError("No valid columns provided for histogram plotting.")
+        
+        df_sample = self.dfall[columns].copy()
+        df_sample_syst = df_syst[columns].copy()
 
         index = np.random.choice(df_sample.index, sample_size, replace=False)
         df_sample = df_sample.loc[index]
@@ -341,13 +403,20 @@ class Dataset_visualise:
         plt.close()
 
     def histogram_syst(self, df_syst, weight_syst, columns=None,nbin = 25):
-
-        df_sample = self.dfall[self.columns].copy()
-        df_sample_syst = df_syst[self.columns].copy()
-
         
         if columns is None:
             columns = self.columns
+        else:
+            for col in columns:
+                if col not in self.columns:
+                    logger.warning(f"Column {col} not found in dataset. Skipping.")
+                    columns.remove(col)
+        if len(columns) == 0:
+            raise ValueError("No valid columns provided for histogram plotting.")
+
+        df_sample = self.dfall[columns].copy()
+        df_sample_syst = df_syst[columns].copy()
+                
         sns.set_theme(style="whitegrid")
         
         # Number of rows and columns in the subplot grid
@@ -403,18 +472,25 @@ class Dataset_visualise:
             
     def event_vise_syst(self,df_syst, columns=None, sample_size=100):
         
-        df_sample = self.dfall[self.columns].copy()
-        df_sample_syst = df_syst[self.columns].copy()
+        if columns is None:
+            columns = self.columns
+        else:
+            for col in columns:
+                if col not in self.columns:
+                    logger.warning(f"Column {col} not found in dataset. Skipping.")
+                    columns.remove(col)
+        if len(columns) == 0:
+            raise ValueError("No valid columns provided for histogram plotting.")
+        
+        df_sample = self.dfall[columns].copy()
+        df_sample_syst = df_syst[columns].copy()
         
         index = np.random.choice(df_sample.index, sample_size, replace=False)
         df_sample = df_sample.loc[index]
         df_sample_syst = df_sample_syst.loc[index]
         df_sample["syst"] = False
         df_sample_syst["syst"] = True
-        
-
-        if columns is None:
-            columns = self.columns
+                
         sns.set_theme(style="whitegrid")
         
         # Number of rows and columns in the subplot grid
@@ -443,8 +519,8 @@ class Dataset_visualise:
 
     def event_vise_syst_arrow(self,df_syst, columns=None, sample_size=100):
         
-        df_sample = self.dfall[self.columns].copy()
-        df_sample_syst = df_syst[self.columns].copy()
+        df_sample = self.dfall[columns].copy()
+        df_sample_syst = df_syst[columns].copy()
 
         index = np.random.choice(df_sample.index, sample_size, replace=False)
         df_sample = df_sample.loc[index]

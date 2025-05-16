@@ -8,6 +8,7 @@ import requests
 from zipfile import ZipFile
 import logging
 import io
+import re
 
 # Get the logging level from an environment variable, default to INFO
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -26,7 +27,13 @@ test_set_settings = None
 
 ZENODO_URL          = "https://zenodo.org/records/15131565/files/FAIR_Universe_HiggsML_data.zip?download=1"
 BLACK_SWAN_DATA_URL = "https://zenodo.org/records/15131565/files/FAIR_Universe_HiggsML_data.zip?download=1"
-SAMPLE_DATA_URL     = "https://zenodo.org/records/15131565/files/sample_data.zip?download=1"
+SAMPLE_DATA_URL     = "https://www.codabench.org/datasets/download/77341e17-f23a-47d9-87eb-ebceee452a14/"
+
+available_datasets = {
+    "neurips2024_data": ZENODO_URL,
+    "blackSwan_data": BLACK_SWAN_DATA_URL,
+    "sample_data": SAMPLE_DATA_URL,
+}
 
 class Data:
     """
@@ -236,7 +243,7 @@ current_path = os.path.dirname(os.path.realpath(__file__))
 parent_path = os.path.dirname(current_path)
 
 
-def __load_dataset(url):
+def download_dataset(input_str):
     """
     Downloads and extracts the Neurips 2024 public dataset.
 
@@ -248,13 +255,33 @@ def __load_dataset(url):
         FileNotFoundError: If the downloaded dataset file is not found.
         zipfile.BadZipFile: If the downloaded file is not a valid zip file.
     """
-    parent_path = os.path.dirname(os.path.realpath(__file__))
-    current_path = os.path.dirname(parent_path)
-    public_data_folder_path = os.path.join(current_path, "public_data")
-    public_input_data_folder_path = os.path.join(
-        current_path, "public_data"
+    
+    # Simple URL pattern matcher
+    url_pattern = re.compile(
+        r'^(?:http|ftp)s?://'  # http:// or https:// or ftp://
+        r'\S+\.\S+'  # domain
     )
-    public_data_zip_path = os.path.join(current_path, "FAIR_Universe_HiggsML_data.zip")
+
+    if url_pattern.match(input_str):
+        logger.info(f"Handling as URL: {input_str}")
+        url = input_str
+        # Add logic for processing the URL, e.g., fetching content
+    else:
+        if input_str in available_datasets:
+            logger.info(f"Handling as dataset name: {input_str}")
+            url = available_datasets[input_str]
+        else:
+            logger.error(f"Invalid input: {input_str}")
+            raise ValueError(f"Invalid input: {input_str}")
+    
+    parent_path = os.path.dirname(os.path.realpath(__file__))
+    working_dir = os.getcwd()
+    logger.info(f"Current working directory: {working_dir}")
+    public_data_folder_path = os.path.join(working_dir, "public_data")
+    public_input_data_folder_path = os.path.join(
+        working_dir, "public_data"
+    )
+    public_data_zip_path = os.path.join(working_dir, "FAIR_Universe_HiggsML_data.zip")
 
     # Check if public_data dir exists
     if os.path.isdir(public_data_folder_path):
@@ -277,7 +304,7 @@ def __load_dataset(url):
         response = requests.get(url, stream=True)
         response.raise_for_status()  # Will raise 403 if unauthorized
 
-        logger.info("Status code: %s", response.status_code)
+        logger.debug("Status code: %s", response.status_code)
 
         # response = requests.get(PUBLIC_DATA_URL, stream=True)
         if response.status_code == 200:
@@ -304,32 +331,3 @@ def __load_dataset(url):
         zip_ref.extractall(public_data_folder_path)
 
     return Data(public_input_data_folder_path)
-
-def Neurips2024_public_dataset():
-    """
-    Downloads and extracts the Neurips 2024 public dataset.
-
-    Returns:
-        Data: The path to the extracted input data.
-
-    Raises:
-        HTTPError: If there is an error while downloading the dataset.
-        FileNotFoundError: If the downloaded dataset file is not found.
-        zipfile.BadZipFile: If the downloaded file is not a valid zip file.
-    """
-    return __load_dataset(ZENODO_URL)
-
-
-def BlackSwan_public_dataset():
-    """
-    Downloads and extracts the Black swan public dataset.
-
-    Returns:
-        Data: The path to the extracted input data.
-
-    Raises:
-        HTTPError: If there is an error while downloading the dataset.
-        FileNotFoundError: If the downloaded dataset file is not found.
-        zipfile.BadZipFile: If the downloaded file is not a valid zip file.
-    """
-    return __load_dataset(BLACK_SWAN_DATA_URL)
