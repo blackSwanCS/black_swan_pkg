@@ -628,7 +628,7 @@ def visualize_coverage(ingestion_result_dict, ground_truth_mus):
         * ingestion_result_dict (dict): A dictionary containing the ingestion results.
         * ground_truth_mus (dict): A dictionary of ground truth mu values.
         
-    .. Image:: images/coverage_plot.png
+    .. Image:: images/coverage_plot.pdf
     """
 
     for key in ingestion_result_dict.keys():
