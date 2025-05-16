@@ -185,13 +185,35 @@ class Ingestion:
             predicted_dict = self.model.predict(test_set)
             predicted_dict["test_set_index"] = test_set_index
 
-            logger.debug(
-                f"mu_hat: {predicted_dict['mu_hat']} - delta_mu_hat: {predicted_dict['delta_mu_hat']} - p16: {predicted_dict['p16']} - p84: {predicted_dict['p84']}"
-            )
 
             if set_index not in self.results_dict:
                 self.results_dict[set_index] = []
             self.results_dict[set_index].append(predicted_dict)
+
+    def process_results_dict(self):
+        # loop over sets
+        for key in self.results_dict.keys():
+            set_result = self.results_dict[key]
+            
+            # Sort the list of dictionaries by "test_set_index" if it exists
+            if set_result and isinstance(set_result, list) and "test_set_index" in set_result[0]:
+                set_result.sort(key=lambda x: x["test_set_index"])
+            
+            # Initialize a dictionary to store all extracted fields
+            ingestion_result_dict = {}
+            
+            # Extract all available fields from the first test_set_dict
+            if set_result and isinstance(set_result, list) and len(set_result) > 0:
+                # Get all possible keys from the first dictionary (assuming all have same keys)
+                available_keys = set_result[0].keys()
+                
+                # For each key, collect all values across test_set_dicts
+                for field in available_keys:
+                    if field != "test_set_index":  # Skip the sorting key
+                        field_values = [test_set_dict[field] for test_set_dict in set_result]
+                        ingestion_result_dict[field + "s" if not field.endswith("s") else field] = field_values
+            
+            self.results_dict[key] = ingestion_result_dict
 
     def compute_result(self):
         """

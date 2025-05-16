@@ -1,5 +1,7 @@
 # HiggsML BlackSwan Package
 
+[![Documentation Status](https://readthedocs.org/projects/black-swan-pkg/badge/?version=latest)](https://black-swan-pkg.readthedocs.io/en/latest/?badge=latest)
+
 you can install this package by 
 ```shell
 pip install HiggsML
