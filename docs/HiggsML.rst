@@ -1,6 +1,13 @@
 HiggsML package
 ===============
+Module contents
+---------------
 
+.. automodule:: HiggsML
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
 Submodules
 ----------
 
@@ -38,10 +45,4 @@ HiggsML.visualization module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
 
-.. automodule:: HiggsML
-   :members:
-   :undoc-members:
-   :show-inheritance:
