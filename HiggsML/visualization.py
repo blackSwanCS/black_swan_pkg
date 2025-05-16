@@ -471,6 +471,15 @@ class Dataset_visualise:
             fig.delaxes(axes[j])
             
     def event_vise_syst(self,df_syst, columns=None, sample_size=100):
+        """
+        Plots the event-wise shift between the nominal dataset and the systemalically shifted dataset.
+        Args:
+            * df_syst (DataFrame): The system dataset.
+            * sample_size (int): The number of samples to consider (default: 100).
+            * columns (list): The list of column names to consider (default: None, which includes all columns).
+        
+        ..Images:: ../images/event_vise_syst.png       
+        """ 
         
         if columns is None:
             columns = self.columns
@@ -518,7 +527,7 @@ class Dataset_visualise:
             fig.delaxes(axes[j])
 
     def event_vise_syst_arrow(self,df_syst, columns=None, sample_size=100):
-        
+                
         df_sample = self.dfall[columns].copy()
         df_sample_syst = df_syst[columns].copy()
 
@@ -628,7 +637,7 @@ def visualize_coverage(ingestion_result_dict, ground_truth_mus):
         * ingestion_result_dict (dict): A dictionary containing the ingestion results.
         * ground_truth_mus (dict): A dictionary of ground truth mu values.
         
-    .. Image:: images/coverage_plot.pdf
+    .. Image:: images/coverage_plot.png
     """
 
     for key in ingestion_result_dict.keys():
