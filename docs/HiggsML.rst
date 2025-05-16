@@ -1,15 +1,5 @@
 HiggsML package
 ===============
-Module contents
----------------
-
-.. automodule:: HiggsML
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   
-Submodules
-----------
 
 HiggsML.datasets module
 -----------------------
