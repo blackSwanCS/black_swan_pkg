@@ -119,6 +119,7 @@ class Dataset_visualise:
             * columns (list): The list of column names to consider (default: None, which includes all columns).
             * nbin (int): The number of bins for the histogram (default: 25).
             
+        .. Image:: images/histogram_datasets.png
         """
         
         if columns is None:
@@ -195,6 +196,7 @@ class Dataset_visualise:
         Args:
         * columns (list): The list of column names to consider (default: None, which includes all columns).
 
+        .. Image:: images/correlation_plots.png
         """
         
         if columns is None:
@@ -229,6 +231,7 @@ class Dataset_visualise:
             * sample_size (int): The number of samples to consider (default: 10).
             * columns (list): The list of column names to consider (default: None, which includes all columns).
 
+        .. Image:: images/pair_plot.png
         """
         if columns is None:
             columns = self.columns
@@ -282,6 +285,7 @@ class Dataset_visualise:
             * mu_hat (float): The value of mu (default: 1.0).
             * bins (int): The number of bins for the histogram (default: 30).
 
+        .. Image:: images/stacked_histogram.png
         """
         if field_name not in self.columns:
             logger.error(f"Field {field_name} not found in dataset.")
@@ -566,6 +570,7 @@ def visualize_scatter(ingestion_result_dict, ground_truth_mus):
         * ingestion_result_dict (dict): A dictionary containing the ingestion results.
         * ground_truth_mus (dict): A dictionary of ground truth mu values.
         
+    .. Image:: images/scatter_plot_mu.png
     """
     plt.figure(figsize=(6, 4))
     for key in ingestion_result_dict.keys():
@@ -592,6 +597,7 @@ def roc_curve_wrapper(score, labels, weights, plot_label="model", color="b", lw=
         * color (str, optional): The color. Defaults to "b".
         * lw (int, optional): The line width. Defaults to 2.
         
+    .. Image:: images/roc_curve.png
     """
 
     auc = roc_auc_score(y_true=labels, y_score=score, sample_weight=weights)
@@ -622,6 +628,7 @@ def visualize_coverage(ingestion_result_dict, ground_truth_mus):
         * ingestion_result_dict (dict): A dictionary containing the ingestion results.
         * ground_truth_mus (dict): A dictionary of ground truth mu values.
         
+    .. Image:: images/coverage_plot.png
     """
 
     for key in ingestion_result_dict.keys():
