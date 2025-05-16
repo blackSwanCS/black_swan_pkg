@@ -9,7 +9,7 @@ current_dir = os.path.abspath(os.path.dirname(__file__))
 image_dir = os.path.join(current_dir, "images")
 
 sys.path.insert(0, os.path.abspath('../'))
-sys.path.insert(0, image_dir)
+sys.path.insert(image_dir)
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
