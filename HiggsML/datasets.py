@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 test_set_settings = None
 
 ZENODO_URL          = "https://zenodo.org/records/15131565/files/FAIR_Universe_HiggsML_data.zip?download=1"
-BLACK_SWAN_DATA_URL = "https://zenodo.org/records/15131565/files/FAIR_Universe_HiggsML_data.zip?download=1"
+BLACK_SWAN_DATA_URL = "https://www.codabench.org/datasets/download/4442e5b8-2b0f-4b4e-b9ca-3c601fc9b001/"
 SAMPLE_DATA_URL     = "https://www.codabench.org/datasets/download/77341e17-f23a-47d9-87eb-ebceee452a14/"
 
 available_datasets = {
@@ -66,9 +66,18 @@ class Data:
 
         self.__train_set = None
         self.__test_set = None
-        
-        train_data_file = os.path.join(input_dir, "FAIR_Universe_HiggsML_data.parquet")
-        croissant_file = os.path.join(input_dir, "FAIR_Universe_HiggsML_data_metadata.json")
+
+        parquet_files = [f for f in os.listdir(input_dir) if f.endswith(".parquet")]
+        meta_data_files =  [f for f in os.listdir(input_dir) if f.endswith("_metadata.json")]
+
+        if len(parquet_files) > 1:
+            logger.warning("Multiple parquet file found, using the first one")
+
+        if len(meta_data_files) > 1:
+            logger.warning("Multiple metadata file found, using the first one")
+
+        train_data_file = os.path.join(input_dir, parquet_files[0])
+        croissant_file = os.path.join(input_dir, meta_data_files[0])
         
         try:
             with open(croissant_file, "r", encoding="utf-8") as f:
@@ -265,11 +274,13 @@ def download_dataset(input_str):
     if url_pattern.match(input_str):
         logger.info(f"Handling as URL: {input_str}")
         url = input_str
+        name = "data"
         # Add logic for processing the URL, e.g., fetching content
     else:
         if input_str in available_datasets:
             logger.info(f"Handling as dataset name: {input_str}")
             url = available_datasets[input_str]
+            name = input_str
         else:
             logger.error(f"Invalid input: {input_str}")
             raise ValueError(f"Invalid input: {input_str}")
@@ -277,17 +288,14 @@ def download_dataset(input_str):
     parent_path = os.path.dirname(os.path.realpath(__file__))
     working_dir = os.getcwd()
     logger.info(f"Current working directory: {working_dir}")
-    public_data_folder_path = os.path.join(working_dir, "public_data")
-    public_input_data_folder_path = os.path.join(
-        working_dir, "public_data"
-    )
-    public_data_zip_path = os.path.join(working_dir, "FAIR_Universe_HiggsML_data.zip")
+    public_data_folder_path = os.path.join(working_dir, name)
+    public_data_zip_path = os.path.join(working_dir, f"{name}.zip")
 
     # Check if public_data dir exists
     if os.path.isdir(public_data_folder_path):
         # Check if public_data dir exists
-        if os.path.isdir(public_input_data_folder_path):
-            return Data(public_input_data_folder_path)
+        if os.path.isdir(public_data_folder_path):
+            return Data(public_data_folder_path)
         else:
             logger.warning("public_data/input_dir directory not found")
 
@@ -326,8 +334,8 @@ def download_dataset(input_str):
         
 
     # Extract public_data.zip
-    logger.info("Extracting FAIR_Universe_HiggsML_data.zip")
+    logger.info(f"Extracting {name}.zip")
     with ZipFile(public_data_zip_path, "r") as zip_ref:
         zip_ref.extractall(public_data_folder_path)
 
-    return Data(public_input_data_folder_path)
+    return Data(public_data_folder_path)
