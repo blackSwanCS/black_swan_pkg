@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "HiggsML"
-version = "0.0.0"
+version = "0.1.2"
 authors = [
     { name = "Ragansu Chakkappai", email = "ragansu.chakkappai@universite-paris-saclay.fr" },
     { name = "David Rousseau", email = "david.rousseau@uijclab.in2p3.fr" },
@@ -29,7 +29,6 @@ dependencies = [
     "requests>=2.31.0",
     "tabulate>=0.9.0",
     "mpld3>=0.5.8",
-    "argparse>=1.4.0"
 ]
 
 [project.urls]
