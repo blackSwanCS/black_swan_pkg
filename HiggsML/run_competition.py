@@ -99,13 +99,8 @@ else:
     program_dir = "/app/program"
 
 
-if not args.codabench:
-    from HiggsML.datasets import BlackSwan_public_dataset as public_dataset
-
-    data = public_dataset()
-else:
-    data = Data(input_dir,data_format="parquet")
-
+from HiggsML.datasets import download_dataset
+data = download_dataset("blackSwan_data") # change to "blackSwan_data" for the actual data
 
 sys.path.append(submission_dir)
 
