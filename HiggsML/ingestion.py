@@ -215,31 +215,6 @@ class Ingestion:
             
             self.results_dict[key] = ingestion_result_dict
 
-    def compute_result(self):
-        """
-        Compute the ingestion result.
-        """
-        logger.info("Computing Ingestion Result")
-
-        # loop over sets
-        for key in self.results_dict.keys():
-            set_result = self.results_dict[key]
-            set_result.sort(key=lambda x: x["test_set_index"])
-            mu_hats, delta_mu_hats, p16, p84 = [], [], [], []
-            for test_set_dict in set_result:
-                mu_hats.append(test_set_dict["mu_hat"])
-                delta_mu_hats.append(test_set_dict["delta_mu_hat"])
-                p16.append(test_set_dict["p16"])
-                p84.append(test_set_dict["p84"])
-
-            ingestion_result_dict = {
-                "mu_hats": mu_hats,
-                "delta_mu_hats": delta_mu_hats,
-                "p16": p16,
-                "p84": p84,
-            }
-            self.results_dict[key] = ingestion_result_dict
-
     def save_result(self, output_dir=None):
         """
         Save the ingestion result to files.

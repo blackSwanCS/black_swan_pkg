@@ -183,7 +183,7 @@ class Scoring:
             set_mae = np.mean(set_maes)
             set_rmse = np.mean(set_rmses)
 
-            result_text = f"Set {i} \nMAE: {set_mae} \nRMSE: {set_rmse} \nInterval: {set_interval} \nCoverage: {set_coverage} \nQuantiles Score: {set_quantiles_score}"
+            result_text = f"Set {i} \nMAE: {set_mae.round(4)} \nRMSE: {set_rmse.round(4)} \nInterval: {set_interval.round(4)} \nCoverage: {set_coverage.round(4)} \nQuantiles Score: {set_quantiles_score.round(4)}"
 
             self.save_figure(
                 mu=np.mean(mu_hats),
@@ -205,16 +205,15 @@ class Scoring:
         )
 
         self.scores_dict = {
-            "rmse": np.mean(rmses),
-            "mae": np.mean(maes),
-            "interval": overall_interval,
-            "coverage": overall_coverage,
-            "quantiles_score": overall_quantiles_score,
-            "ingestion_duration": self.ingestion_duration,
+            "rmse": round(np.mean(rmses), 4),
+            "mae": round(np.mean(maes), 4),
+            "interval": round(overall_interval, 4),
+            "coverage": round(overall_coverage, 4),
+            "quantiles_score": round(overall_quantiles_score, 4),
+            "ingestion_duration": round(self.ingestion_duration, 4) if self.ingestion_duration is not None else None,
         }
 
-        overall_result_text = f"Overall Score \n================\nRMSE: {round(np.mean(rmses), 3)} \nMAE: {round(np.mean(maes), 3)} \nInterval: {round(overall_interval, 3)} \nCoverage: {round(overall_coverage, 3)} \nQuantiles score: {round(overall_quantiles_score, 3)} \nIngestion duration: {self.ingestion_duration}"
-        html_text(overall_result_text, self.html_file, font_size="30px")
+        html_text(self.scores_dict, self.html_file, font_size="30px")
         print("[✔]")
 
     def RMSE_score(self, mu, mu_hat, delta_mu_hat):
@@ -315,14 +314,15 @@ class Scoring:
             * p84 (array): The 84th percentile.
             * set (int, optional): The set number. Defaults to 0.
         """
-        plt.figure(figsize=(5, 5))
+        
+        plt.figure(figsize=(5, 4))
         # plot horizontal lines from p16 to p84
         for i, (p16, p84) in enumerate(zip(p16s, p84s)):
             if p16 > p84:
                 p16, p84 = 0, 0
             if i == 0:
                 plt.hlines(
-                    y=i, xmin=p16, xmax=p84, colors="b", label="Coverage interval"
+                    y=i, xmin=p16, xmax=p84, colors="b", linewidth=2,label="Coverage interval"
                 )
             else:
                 plt.hlines(y=i, xmin=p16, xmax=p84, colors="b")
@@ -331,6 +331,7 @@ class Scoring:
             ymin=0,
             ymax=len(p16s),
             colors="r",
+            linewidth=2,
             linestyles="dashed",
             label="average $\\mu$",
         )
@@ -340,6 +341,7 @@ class Scoring:
                 ymin=0,
                 ymax=len(p16s),
                 colors="g",
+                linewidth=2,
                 linestyles="dashed",
                 label="true $\\mu$",
             )
@@ -348,10 +350,11 @@ class Scoring:
         plt.ylabel("pseudo-experiments", fontdict={"size": 14})
         plt.xticks(fontsize=14)  # Set the x-tick font size
         plt.yticks(fontsize=14)  # Set the y-tick font size
+        plt.xlim(min(p16s),max(p84s) + 1)
         plt.title(f"Set {set}", fontdict={"size": 14})
-
-        plt.legend(loc="upper left", bbox_to_anchor=(1, 1), fontsize=12)
-        plt.grid()
+        plt.figtext(0.5, -0.3, result_text, wrap=True, horizontalalignment='center',
+                    fontsize=10, bbox=dict(facecolor='white', edgecolor='black', boxstyle='round'))
+        plt.legend(loc="upper left", fontsize=12)
         plt.tight_layout()
 
         if result_text is None:
@@ -360,17 +363,65 @@ class Scoring:
         save_plot_to_html(plt, self.html_file, result_text, append=True)
 
 
-def html_text(text, html_fle, font_size="20px"):
-    formatted_text = text.replace("\n", "<br>")
+def html_text(data, html_fle, font_size="20px"):
+    
     bar_html = f"""
-    </div>
-            <div style="display: flex; background-color: lightyellow; padding: 10px; justify-content: center; align-items: center;">
-            <div style="border: 1px solid black; padding: 10px; font-size: {font_size};">{formatted_text}</div>
+    <div class="table-box">
+        <table>
+            <tr><th>Key</th><th>Value</th></tr>
+            {''.join(f'<tr><td>{key}</td><td>{value}</td></tr>' for key, value in data.items())}
+        </table>
     </div>
     """
     with open(html_fle, "a") as f:
         f.write(bar_html)
 
+def html_table(data,html_fle):
+    # Build HTML
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Dictionary Table</title>
+        <style>
+            .table-box {{
+                width: fit-content;
+                padding: 20px;
+                border: 2px solid #333;
+                border-radius: 10px;
+                background-color: #f9f9f9;
+                margin: 40px auto;
+                font-family: Arial, sans-serif;
+            }}
+            table {{
+                border-collapse: collapse;
+                width: 100%;
+            }}
+            td, th {{
+                border: 1px solid #666;
+                padding: 10px 20px;
+                text-align: left;
+            }}
+            th {{
+                background-color: #ddd;
+            }}
+        </style>
+    </head>
+    <body>
+
+    <div class="table-box">
+        <table>
+            <tr><th>Key</th><th>Value</th></tr>
+            {''.join(f'<tr><td>{key}</td><td>{value}</td></tr>' for key, value in data.items())}
+        </table>
+    </div>
+
+    </body>
+    </html>
+    """
+
+    with open(html_fle, "a") as f:
+        f.write(html_content)
 
 def save_plot_to_html(plt, html_file, text, append=False):
     fig = plt.gcf()  # Get the current figure
@@ -379,8 +430,8 @@ def save_plot_to_html(plt, html_file, text, append=False):
     centered_html_str = f"""
     <div style="border: 2px solid black; padding: 10px;">
         <div style="display: flex; justify-content: center; align-items: center;">
-            <div style="margin-right: 20px;">{html_str}</div>
-            <div style="border: 1px solid black; padding: 10px; font-size: 30px;">{formatted_text}</div>
+            <div style="margin-right: 10px;">{html_str}</div>
+            <div style="border: 1px solid black; padding: 10px; font-size: 20px;">{formatted_text}</div>
         </div>
     </div>
     """
@@ -389,7 +440,7 @@ def save_plot_to_html(plt, html_file, text, append=False):
             f.write(centered_html_str)
     else:
         bar_html = """
-        <div style="background-color: lightgray; padding: 10px; text-align: center; font-size: 20px;">
+        <div style="background-color: lightgray; padding: 10px; text-align: center; font-size: 36px;">
             Detailed Results
         </div>
         """

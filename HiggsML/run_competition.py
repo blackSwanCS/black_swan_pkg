@@ -1,16 +1,15 @@
 import sys
-
-sys.path.append("..")
-from HiggsML.ingestion import Ingestion
-
-from HiggsML.datasets import Data
 import argparse
 import pathlib
 import os
 import numpy as np
 import json
 
+from HiggsML.ingestion import Ingestion
+from HiggsML.datasets import Data
+
 root_dir_name = os.path.dirname(os.path.realpath(__file__))
+working_dir = os.getcwd()
 
 parser = argparse.ArgumentParser(
     description="This is script to run ingestion program for the competition"
@@ -20,19 +19,19 @@ parser.add_argument(
     "-i",
     type=pathlib.Path,
     help="Input file location",
-    default=os.path.join(root_dir_name, "sample_data"),
+    default=os.path.join(working_dir, "sample_data"),
 )
 parser.add_argument(
     "--output",
     "-o",
     help="Output file location",
-    default=os.path.join(root_dir_name, "sample_result_submission"),
+    default=os.path.join(working_dir, "sample_result_submission"),
 )
 parser.add_argument(
     "--submission",
     "-s",
     help="Submission file location",
-    default=os.path.join(root_dir_name, "sample_code_submission"),
+    default=os.path.join(working_dir, "sample_code_submission"),
 )
 parser.add_argument(
     "--codabench",
@@ -76,13 +75,13 @@ parser.add_argument(
     "--num-pseudo-experiments",
     type=int,
     help="Number of pseudo experiments",
-    default=2,
+    default=25,
 )
 parser.add_argument(
     "--num-of-sets",
     type=int,
     help="Number of sets",
-    default=5,
+    default=25,
 )
 
 
@@ -99,13 +98,8 @@ else:
     program_dir = "/app/program"
 
 
-if not args.codabench:
-    from HiggsML.datasets import BlackSwan_public_dataset as public_dataset
-
-    data = public_dataset()
-else:
-    data = Data(input_dir,data_format="parquet")
-
+from HiggsML.datasets import download_dataset
+data = download_dataset("blackSwan_data") # change to "blackSwan_data" for the actual data
 
 sys.path.append(submission_dir)
 
@@ -153,7 +147,7 @@ data.load_test_set()
 ingestion.predict_submission(test_settings)
 
 # compute result
-ingestion.compute_result()
+ingestion.process_results_dict()
 
 # save result
 ingestion.save_result(output_dir)
@@ -192,9 +186,6 @@ scoring.write_scores()
 
 # Stop timer
 scoring.stop_timer()
-
-# Show duration
-scoring.show_duration()
 
 print("\n----------------------------------------------")
 print("[✔] Scoring Program executed successfully!")

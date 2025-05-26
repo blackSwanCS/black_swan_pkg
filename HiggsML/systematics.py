@@ -585,16 +585,18 @@ def systematics(
         data_syst["weights"] = weights
 
     # build resulting dictionary / dataframe
+
+    from HiggsML.derived_quantities import DER_data
     
     if data_type == "df":
-        return data_syst
+        return DER_data(data_syst)
     else:
         data_syst_set = {}
         for key in data_set.keys():
             if key not in ["data","settings"]:
                 data_syst_set[key] = data_syst.pop(key)
         # compute DERived features        
-        data_syst_set["data"] = data_syst
+        data_syst_set["data"] = DER_data(data_syst)
         if "settings" in data_set.keys():
             data_syst_set["settings"] = data_set["settings"]
         
