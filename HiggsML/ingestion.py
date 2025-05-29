@@ -116,7 +116,7 @@ class Ingestion:
         self.data.load_train_set(**kwargs)
         return self.data.get_train_set()
 
-    def init_submission(self, Model):
+    def init_submission(self, Model,model_type="sample_model"):
         """
         Initialize the submitted model.
 
@@ -126,7 +126,7 @@ class Ingestion:
         logger.info("Initializing Submmited Model")
         from HiggsML.systematics import systematics
 
-        self.model = Model(get_train_set=self.load_train_set, systematics=systematics)
+        self.model = Model(get_train_set=self.load_train_set, systematics=systematics, model_type=model_type)
         self.data.delete_train_set()
 
     def fit_submission(self):
@@ -185,7 +185,6 @@ class Ingestion:
             predicted_dict = self.model.predict(test_set)
             predicted_dict["test_set_index"] = test_set_index
 
-
             if set_index not in self.results_dict:
                 self.results_dict[set_index] = []
             self.results_dict[set_index].append(predicted_dict)
@@ -194,25 +193,33 @@ class Ingestion:
         # loop over sets
         for key in self.results_dict.keys():
             set_result = self.results_dict[key]
-            
+
             # Sort the list of dictionaries by "test_set_index" if it exists
-            if set_result and isinstance(set_result, list) and "test_set_index" in set_result[0]:
+            if (
+                set_result
+                and isinstance(set_result, list)
+                and "test_set_index" in set_result[0]
+            ):
                 set_result.sort(key=lambda x: x["test_set_index"])
-            
+
             # Initialize a dictionary to store all extracted fields
             ingestion_result_dict = {}
-            
+
             # Extract all available fields from the first test_set_dict
             if set_result and isinstance(set_result, list) and len(set_result) > 0:
                 # Get all possible keys from the first dictionary (assuming all have same keys)
                 available_keys = set_result[0].keys()
-                
+
                 # For each key, collect all values across test_set_dicts
                 for field in available_keys:
                     if field != "test_set_index":  # Skip the sorting key
-                        field_values = [test_set_dict[field] for test_set_dict in set_result]
-                        ingestion_result_dict[field + "s" if not field.endswith("s") else field] = field_values
-            
+                        field_values = [
+                            test_set_dict[field] for test_set_dict in set_result
+                        ]
+                        ingestion_result_dict[
+                            field + "s" if not field.endswith("s") else field
+                        ] = field_values
+
             self.results_dict[key] = ingestion_result_dict
 
     def save_result(self, output_dir=None):

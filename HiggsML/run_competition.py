@@ -15,11 +15,10 @@ parser = argparse.ArgumentParser(
     description="This is script to run ingestion program for the competition"
 )
 parser.add_argument(
-    "--input",
-    "-i",
-    type=pathlib.Path,
-    help="Input file location",
-    default=os.path.join(working_dir, "sample_data"),
+    "--model-type",
+    "-m",
+    help="Type of model in Model, sample ? BDT ? NN",
+    default="sample_model",
 )
 parser.add_argument(
     "--output",
@@ -88,7 +87,6 @@ parser.add_argument(
 args = parser.parse_args()
 
 if not args.codabench:
-    input_dir = args.input
     output_dir = args.output
     submission_dir = args.submission
 else:
@@ -99,8 +97,7 @@ else:
 
 
 from HiggsML.datasets import download_dataset
-if args.input:
-    data = download_dataset(input_dir)
+
 data = download_dataset("blackSwan_data") # change to "blackSwan_data" for the actual data
 
 sys.path.append(submission_dir)
@@ -113,8 +110,9 @@ ingestion = Ingestion(data)
 # Start timer
 ingestion.start_timer()
 
+
 # initialize submission
-ingestion.init_submission(Model)
+ingestion.init_submission(Model, model_type=args.model_type)
 
 # fit submission
 ingestion.fit_submission()

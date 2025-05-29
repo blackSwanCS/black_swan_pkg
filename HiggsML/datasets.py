@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 test_set_settings = None
 
 ZENODO_URL          = "https://zenodo.org/records/15131565/files/FAIR_Universe_HiggsML_data.zip?download=1"
-BLACK_SWAN_DATA_URL = "https://www.codabench.org/datasets/download/4442e5b8-2b0f-4b4e-b9ca-3c601fc9b001/"
+BLACK_SWAN_DATA_URL = "https://www.codabench.org/datasets/download/56bf8a3e-45b7-4912-8586-366c18c82586/"
 SAMPLE_DATA_URL     = "https://www.codabench.org/datasets/download/77341e17-f23a-47d9-87eb-ebceee452a14/"
 
 available_datasets = {
