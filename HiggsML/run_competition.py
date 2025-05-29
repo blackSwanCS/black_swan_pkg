@@ -99,6 +99,8 @@ else:
 
 
 from HiggsML.datasets import download_dataset
+if args.input:
+    data = download_dataset(input_dir)
 data = download_dataset("blackSwan_data") # change to "blackSwan_data" for the actual data
 
 sys.path.append(submission_dir)

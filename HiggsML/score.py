@@ -299,6 +299,9 @@ class Scoring:
 
     def write_scores(self):
 
+        for key in self.scores_dict.keys():
+            print(key , "   ", self.scores_dict[key]) 
+
         logger.info(f"Writing scores to {self.score_file}")
 
         with open(self.score_file, "w") as f_score:
