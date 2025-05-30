@@ -293,7 +293,7 @@ def diboson_bkg_weight_norm(weights, detailedlabel, systBkgNorm):
         * detailedlabel (array-like): The detailed labels
         * systBkgNorm (float): The scaling factor
 
-    
+
     Returns:
         array-like: The scaled weights
 
@@ -470,8 +470,8 @@ def postprocess(data):
     """
     # apply higher threshold on had pt (dropping events)
     data = data.drop(data[data.PRI_had_pt < 26].index)
-    
-    #need to reindex
+
+    # need to reindex
     data.reset_index(drop=True, inplace=True)
 
     # apply threshold on leading and subleading jets if they exist
@@ -479,22 +479,20 @@ def postprocess(data):
     # so that leading and subleading jet should never be swapped
 
     # if subleading jet pt below high threshold, do so it never existed
-    mask = data['PRI_jet_subleading_pt'].between(0, 26)
-    data.loc[mask, 'PRI_jet_all_pt'] -= data['PRI_jet_subleading_pt']
-    data.loc[mask, 'PRI_jet_subleading_pt'] = -25
-    data.loc[mask, 'PRI_jet_subleading_eta'] = -25
-    data.loc[mask, 'PRI_jet_subleading_phi'] = -25
-    data.loc[mask, 'PRI_n_jets'] -= 1
+    mask = data["PRI_jet_subleading_pt"].between(0, 26)
+    data.loc[mask, "PRI_jet_all_pt"] -= data["PRI_jet_subleading_pt"]
+    data.loc[mask, "PRI_jet_subleading_pt"] = -25
+    data.loc[mask, "PRI_jet_subleading_eta"] = -25
+    data.loc[mask, "PRI_jet_subleading_phi"] = -25
+    data.loc[mask, "PRI_n_jets"] -= 1
 
     # if leading jet pt below high threshold, do so it never existed
-    mask = data['PRI_jet_leading_pt'].between(0, 26)
-    data.loc[mask, 'PRI_jet_all_pt'] -= data['PRI_jet_leading_pt']
-    data.loc[mask, 'PRI_jet_leading_pt'] = -25
-    data.loc[mask, 'PRI_jet_leading_eta'] = -25
-    data.loc[mask, 'PRI_jet_leading_phi'] = -25
-    data.loc[mask, 'PRI_n_jets'] -= 1
-
-
+    mask = data["PRI_jet_leading_pt"].between(0, 26)
+    data.loc[mask, "PRI_jet_all_pt"] -= data["PRI_jet_leading_pt"]
+    data.loc[mask, "PRI_jet_leading_pt"] = -25
+    data.loc[mask, "PRI_jet_leading_eta"] = -25
+    data.loc[mask, "PRI_jet_leading_phi"] = -25
+    data.loc[mask, "PRI_n_jets"] -= 1
 
     # apply low threshold on lepton pt (does nothing)
     data = data.drop(data[data.PRI_lep_pt < 20].index)
@@ -537,18 +535,17 @@ def systematics(
             raise ValueError("data_set must contain a 'data' key")
         if "weights" not in data_set.keys():
             raise ValueError("data_set must contain a 'weights' key")
-        
+
         data_type = "dict"
-        
+
         data_df = data_set["data"].copy()
         for key in data_set.keys():
-            if key not in ["data","settings"]:
+            if key not in ["data", "settings"]:
                 data_df[key] = data_set[key]
     else:
         raise ValueError("data_set must be a pandas DataFrame or a dictionary")
-        
 
-    # modify primary features according to tes, jes softmet    
+    # modify primary features according to tes, jes softmet
     data_syst = mom4_manipulate(
         data=data_df.copy(),
         systTauEnergyScale=tes,
@@ -587,19 +584,19 @@ def systematics(
     # build resulting dictionary / dataframe
 
     from HiggsML.derived_quantities import DER_data
-    
+
     if data_type == "df":
         return DER_data(data_syst)
     else:
         data_syst_set = {}
         for key in data_set.keys():
-            if key not in ["data","settings"]:
+            if key not in ["data", "settings"]:
                 data_syst_set[key] = data_syst.pop(key)
-        # compute DERived features        
+        # compute DERived features
         data_syst_set["data"] = DER_data(data_syst)
         if "settings" in data_set.keys():
             data_syst_set["settings"] = data_set["settings"]
-        
+
         return data_syst_set
 
 
@@ -696,7 +693,6 @@ def get_systematics_dataset(
 
 def generate_pseudo_exp_data(data, set_mu=1.0, dict_systematics=None, seed=0):
 
-
     if dict_systematics is None:
         dict_systematics = {
             "tes": False,
@@ -754,19 +750,19 @@ def generate_pseudo_exp_data(data, set_mu=1.0, dict_systematics=None, seed=0):
         bkg_scale=bkg_scale,
         seed=seed,
     )
-        
+
     test_set = get_systematics_dataset(
         pesudo_exp_data,
         tes=tes,
         jes=jes,
         soft_met=soft_met,
     )
-    
+
     return test_set
 
 
 # Assuming 'data_set' is a DataFrame with a 'weights' column
-def repeat_rows_by_weight(data_set,seed=31415):
+def repeat_rows_by_weight(data_set, seed=31415):
 
     # Ensure 'weights' column is integer, as fractional weights don't make sense for row repetition
     data_set["weights"] = data_set["weights"].astype(int)
@@ -777,7 +773,9 @@ def repeat_rows_by_weight(data_set,seed=31415):
     # Reset index to avoid duplicate indices
     repeated_data_set.reset_index(drop=True, inplace=True)
 
-    repeated_data_set = repeated_data_set.sample(frac=1, random_state=seed).reset_index(drop=True)
+    repeated_data_set = repeated_data_set.sample(frac=1, random_state=seed).reset_index(
+        drop=True
+    )
 
     repeated_data_set.drop(columns="weights", inplace=True)
 

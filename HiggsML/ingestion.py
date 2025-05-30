@@ -116,7 +116,7 @@ class Ingestion:
         self.data.load_train_set(**kwargs)
         return self.data.get_train_set()
 
-    def init_submission(self, Model,model_type="sample_model"):
+    def init_submission(self, Model, model_type="sample_model"):
         """
         Initialize the submitted model.
 
@@ -126,7 +126,11 @@ class Ingestion:
         logger.info("Initializing Submmited Model")
         from HiggsML.systematics import systematics
 
-        self.model = Model(get_train_set=self.load_train_set, systematics=systematics, model_type=model_type)
+        self.model = Model(
+            get_train_set=self.load_train_set,
+            systematics=systematics,
+            model_type=model_type,
+        )
         self.data.delete_train_set()
 
     def fit_submission(self):

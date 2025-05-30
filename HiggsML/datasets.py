@@ -25,15 +25,20 @@ logger = logging.getLogger(__name__)
 
 test_set_settings = None
 
-ZENODO_URL          = "https://zenodo.org/records/15131565/files/FAIR_Universe_HiggsML_data.zip?download=1"
-BLACK_SWAN_DATA_URL = "https://www.codabench.org/datasets/download/56bf8a3e-45b7-4912-8586-366c18c82586/"
-SAMPLE_DATA_URL     = "https://www.codabench.org/datasets/download/77341e17-f23a-47d9-87eb-ebceee452a14/"
+ZENODO_URL = "https://zenodo.org/records/15131565/files/FAIR_Universe_HiggsML_data.zip?download=1"
+BLACK_SWAN_DATA_URL = (
+    "https://www.codabench.org/datasets/download/56bf8a3e-45b7-4912-8586-366c18c82586/"
+)
+SAMPLE_DATA_URL = (
+    "https://www.codabench.org/datasets/download/77341e17-f23a-47d9-87eb-ebceee452a14/"
+)
 
 available_datasets = {
     "neurips2024_data": ZENODO_URL,
     "blackSwan_data": BLACK_SWAN_DATA_URL,
     "sample_data": SAMPLE_DATA_URL,
 }
+
 
 class Data:
     """
@@ -56,7 +61,7 @@ class Data:
         * get_syst_train_set(): Returns the train dataset with systematic variations.
     """
 
-    def __init__(self, input_dir,test_size=0.3):
+    def __init__(self, input_dir, test_size=0.3):
         """
         Constructs a Data object.
 
@@ -68,7 +73,9 @@ class Data:
         self.__test_set = None
 
         parquet_files = [f for f in os.listdir(input_dir) if f.endswith(".parquet")]
-        meta_data_files =  [f for f in os.listdir(input_dir) if f.endswith("_metadata.json")]
+        meta_data_files = [
+            f for f in os.listdir(input_dir) if f.endswith("_metadata.json")
+        ]
 
         if len(parquet_files) > 1:
             logger.warning("Multiple parquet file found, using the first one")
@@ -78,7 +85,7 @@ class Data:
 
         train_data_file = os.path.join(input_dir, parquet_files[0])
         croissant_file = os.path.join(input_dir, meta_data_files[0])
-        
+
         try:
             with open(croissant_file, "r", encoding="utf-8") as f:
                 self.metadata = json.load(f)
@@ -86,7 +93,9 @@ class Data:
             logger.warning("Metadata file not found. Proceeding without metadata.")
             self.metadata = {}
         except json.JSONDecodeError:
-            logger.warning("Metadata file is not a valid JSON. Proceeding without metadata.")
+            logger.warning(
+                "Metadata file is not a valid JSON. Proceeding without metadata."
+            )
             self.metadata = {}
         except Exception as e:
             logger.warning(f"An error occurred while reading the metadata file: {e}")
@@ -97,10 +106,13 @@ class Data:
         # Step 1: Determine the total number of rows
         if "total_rows" in self.metadata:
             self.total_rows = self.metadata["total_rows"]
-        else :
+        else:
             # If total_rows is not in metadata, calculate it from the row groups
-            self.total_rows = sum(self.parquet_file.metadata.row_group(i).num_rows for i in range(self.parquet_file.num_row_groups))        
-        
+            self.total_rows = sum(
+                self.parquet_file.metadata.row_group(i).num_rows
+                for i in range(self.parquet_file.num_row_groups)
+            )
+
         if test_size is not None:
             if isinstance(test_size, int):
                 test_size = min(test_size, self.total_rows)
@@ -110,13 +122,12 @@ class Data:
                 else:
                     raise ValueError("Test size must be between 0.0 and 1.0")
             else:
-                raise ValueError("Test size must be an integer or a float")        
-        
+                raise ValueError("Test size must be an integer or a float")
+
         self.test_size = test_size
-        
+
         logger.info(f"Total rows: {self.total_rows}")
         logger.info(f"Test size: {self.test_size}")
-        
 
     def load_train_set(self, train_size=None, selected_indices=None):
         if train_size is not None:
@@ -139,25 +150,24 @@ class Data:
             train_size = len(selected_indices)
         else:
             train_size = self.total_rows - self.test_size
-            
+
         if train_size > self.total_rows - self.test_size:
             raise ValueError("Sample size exceeds the number of available rows")
 
         if selected_indices is None:
-            selected_indices = np.random.choice((self.total_rows - self.test_size), size=train_size, replace=False)
-        
+            selected_indices = np.random.choice(
+                (self.total_rows - self.test_size), size=train_size, replace=False
+            )
+
         selected_train_indices = np.sort(selected_indices) + self.test_size
-        
+
         logger.info(f"Selected train size: {len(selected_train_indices)}")
-        
-        
+
         # Step 2: Load the data
         self.__train_set = self.__load_data(selected_train_indices)
-        
-        # Balancing the weights 
 
-        
-        
+        # Balancing the weights
+
     def __load_data(self, selected_indices):
 
         current_row = 0
@@ -167,32 +177,41 @@ class Data:
             row_group_size = len(row_group)
 
             # Determine indices within the current row group that fall in the selected range
-            within_group_indices = selected_indices[(selected_indices >= current_row) & (selected_indices < current_row + row_group_size)] - current_row
-            sampled_df = pd.concat([sampled_df, row_group.iloc[within_group_indices]], ignore_index=True)
+            within_group_indices = (
+                selected_indices[
+                    (selected_indices >= current_row)
+                    & (selected_indices < current_row + row_group_size)
+                ]
+                - current_row
+            )
+            sampled_df = pd.concat(
+                [sampled_df, row_group.iloc[within_group_indices]], ignore_index=True
+            )
 
             # Update the current row count
             current_row += row_group_size
 
-        
         buffer = io.StringIO()
         sampled_df.info(buf=buffer, memory_usage="deep", verbose=False)
         info_str = "\n" + buffer.getvalue()
         logger.debug(info_str)
         logger.info("Data loaded successfully")
-        
+
         if "sum_weights" in self.metadata:
             sum_weights = self.metadata["sum_weights"]
             if sum_weights > 0:
-                sampled_df["weights"] = (sum_weights * sampled_df["weights"])/sum(sampled_df["weights"])
+                sampled_df["weights"] = (sum_weights * sampled_df["weights"]) / sum(
+                    sampled_df["weights"]
+                )
             else:
                 logger.warning("Sum of weights is zero. No balancing applied.")
-        
+
         return sampled_df
 
     def load_test_set(self):
 
         selected_test_indices = np.array(range(self.test_size))
-        
+
         # Load the data
         test_df = self.__load_data(selected_test_indices)
 
@@ -206,8 +225,7 @@ class Data:
 
         for key in test_set.keys():
 
-            test_set[key] = test_df[
-                test_df["detailed_labels"] == key]
+            test_set[key] = test_df[test_df["detailed_labels"] == key]
             test_set[key].pop("detailed_labels")
             test_set[key].pop("labels")
 
@@ -264,11 +282,11 @@ def download_dataset(input_str):
         FileNotFoundError: If the downloaded dataset file is not found.
         zipfile.BadZipFile: If the downloaded file is not a valid zip file.
     """
-    
+
     # Simple URL pattern matcher
     url_pattern = re.compile(
-        r'^(?:http|ftp)s?://'  # http:// or https:// or ftp://
-        r'\S+\.\S+'  # domain
+        r"^(?:http|ftp)s?://"  # http:// or https:// or ftp://
+        r"\S+\.\S+"  # domain
     )
 
     if url_pattern.match(input_str):
@@ -284,7 +302,7 @@ def download_dataset(input_str):
         else:
             logger.error(f"Invalid input: {input_str}")
             raise ValueError(f"Invalid input: {input_str}")
-    
+
     parent_path = os.path.dirname(os.path.realpath(__file__))
     working_dir = os.getcwd()
     logger.info(f"Current working directory: {working_dir}")
@@ -331,7 +349,6 @@ def download_dataset(input_str):
             )
     else:
         logger.info("public_data.zip already exists")
-        
 
     # Extract public_data.zip
     logger.info(f"Extracting {name}.zip")

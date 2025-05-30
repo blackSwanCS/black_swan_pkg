@@ -98,7 +98,9 @@ else:
 
 from HiggsML.datasets import download_dataset
 
-data = download_dataset("blackSwan_data") # change to "blackSwan_data" for the actual data
+data = download_dataset(
+    "blackSwan_data"
+)  # change to "blackSwan_data" for the actual data
 
 sys.path.append(submission_dir)
 
@@ -190,4 +192,3 @@ scoring.stop_timer()
 print("\n----------------------------------------------")
 print("[✔] Scoring Program executed successfully!")
 print("----------------------------------------------\n\n")
-

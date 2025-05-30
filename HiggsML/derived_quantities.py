@@ -306,16 +306,16 @@ def f_DER_lep_eta_centrality(data):
 
     data["difference"] = (data.PRI_jet_leading_eta - data.PRI_jet_subleading_eta) ** 2
     data["moyenne"] = (data.PRI_jet_leading_eta + data.PRI_jet_subleading_eta) / 2
-    
+
     epsilon = 0.0001
     mask = data["difference"] == 0.0
 
     data["DER_lep_eta_centrality"] = exp(
         -4 / (data.difference) * ((data.PRI_lep_eta - data.moyenne) ** 2)
     ) * (data.PRI_n_jets >= 2) - 25 * (data.PRI_n_jets <= 1)
-    
+
     data.loc[mask, "DER_lep_eta_centrality"] = exp(
-        -4 / (data.difference+epsilon) * ((data.PRI_lep_eta - data.moyenne) ** 2)
+        -4 / (data.difference + epsilon) * ((data.PRI_lep_eta - data.moyenne) ** 2)
     ) * (data.PRI_n_jets >= 2) - 25 * (data.PRI_n_jets <= 1)
 
     del data["difference"]
@@ -371,15 +371,15 @@ def DER_data(data):
     data = f_DER_met_phi_centrality(data)
     data = f_DER_lep_eta_centrality(data)
     data = f_del_DER(data)
-    
+
     logger.debug("Derived Quantities calculated successfully")
-    
+
     buffer = io.StringIO()
     data.info(buf=buffer, memory_usage="deep", verbose=False)
     info_str = "Data with Derived Quantities :\n" + buffer.getvalue()
     logger.debug(info_str)
 
-    double_precision_cols = data.select_dtypes(include=['float64']).columns
+    double_precision_cols = data.select_dtypes(include=["float64"]).columns
 
     logger.debug(f"Converting columns {double_precision_cols} to float32")
     data[double_precision_cols] = data[double_precision_cols].astype(np.float32)
