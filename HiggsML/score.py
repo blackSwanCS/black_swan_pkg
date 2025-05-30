@@ -210,7 +210,11 @@ class Scoring:
             "interval": round(overall_interval, 4),
             "coverage": round(overall_coverage, 4),
             "quantiles_score": round(overall_quantiles_score, 4),
-            "ingestion_duration": round(self.ingestion_duration, 4) if self.ingestion_duration is not None else None,
+            "ingestion_duration": (
+                round(self.ingestion_duration, 4)
+                if self.ingestion_duration is not None
+                else None
+            ),
         }
 
         html_text(self.scores_dict, self.html_file, font_size="30px")
@@ -299,6 +303,9 @@ class Scoring:
 
     def write_scores(self):
 
+        for key in self.scores_dict.keys():
+            print(key, "   ", self.scores_dict[key])
+
         logger.info(f"Writing scores to {self.score_file}")
 
         with open(self.score_file, "w") as f_score:
@@ -314,7 +321,7 @@ class Scoring:
             * p84 (array): The 84th percentile.
             * set (int, optional): The set number. Defaults to 0.
         """
-        
+
         plt.figure(figsize=(5, 4))
         # plot horizontal lines from p16 to p84
         for i, (p16, p84) in enumerate(zip(p16s, p84s)):
@@ -322,7 +329,12 @@ class Scoring:
                 p16, p84 = 0, 0
             if i == 0:
                 plt.hlines(
-                    y=i, xmin=p16, xmax=p84, colors="b", linewidth=2,label="Coverage interval"
+                    y=i,
+                    xmin=p16,
+                    xmax=p84,
+                    colors="b",
+                    linewidth=2,
+                    label="Coverage interval",
                 )
             else:
                 plt.hlines(y=i, xmin=p16, xmax=p84, colors="b")
@@ -350,10 +362,17 @@ class Scoring:
         plt.ylabel("pseudo-experiments", fontdict={"size": 14})
         plt.xticks(fontsize=14)  # Set the x-tick font size
         plt.yticks(fontsize=14)  # Set the y-tick font size
-        plt.xlim(min(p16s),max(p84s) + 1)
+        plt.xlim(min(p16s), max(p84s) + 1)
         plt.title(f"Set {set}", fontdict={"size": 14})
-        plt.figtext(0.5, -0.3, result_text, wrap=True, horizontalalignment='center',
-                    fontsize=10, bbox=dict(facecolor='white', edgecolor='black', boxstyle='round'))
+        plt.figtext(
+            0.5,
+            -0.3,
+            result_text,
+            wrap=True,
+            horizontalalignment="center",
+            fontsize=10,
+            bbox=dict(facecolor="white", edgecolor="black", boxstyle="round"),
+        )
         plt.legend(loc="upper left", fontsize=12)
         plt.tight_layout()
 
@@ -364,7 +383,7 @@ class Scoring:
 
 
 def html_text(data, html_fle, font_size="20px"):
-    
+
     bar_html = f"""
     <div class="table-box">
         <table>
@@ -376,7 +395,8 @@ def html_text(data, html_fle, font_size="20px"):
     with open(html_fle, "a") as f:
         f.write(bar_html)
 
-def html_table(data,html_fle):
+
+def html_table(data, html_fle):
     # Build HTML
     html_content = f"""
     <!DOCTYPE html>
@@ -423,6 +443,7 @@ def html_table(data,html_fle):
     with open(html_fle, "a") as f:
         f.write(html_content)
 
+
 def save_plot_to_html(plt, html_file, text, append=False):
     fig = plt.gcf()  # Get the current figure
     html_str = mpld3.fig_to_html(fig)
@@ -456,8 +477,6 @@ def html_heading(heading, html_file):
     """
     with open(html_file, "w") as f:
         f.write(heading_html)
-        
-    
 
 
 if __name__ == "__main__":
@@ -525,9 +544,7 @@ if __name__ == "__main__":
             print("Settings file not found. Please provide the settings file.")
             sys.exit(1)
 
-
     from HiggsML.score import Scoring
-
 
     # Init scoring
     scoring = Scoring()

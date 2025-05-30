@@ -1,3 +1,6 @@
+from HiggsML.score import Scoring
+from model import Model
+from HiggsML.datasets import download_dataset
 import sys
 import argparse
 import pathlib
@@ -15,11 +18,10 @@ parser = argparse.ArgumentParser(
     description="This is script to run ingestion program for the competition"
 )
 parser.add_argument(
-    "--input",
-    "-i",
-    type=pathlib.Path,
-    help="Input file location",
-    default=os.path.join(working_dir, "sample_data"),
+    "--model-type",
+    "-m",
+    help="Type of model in Model, sample ? BDT ? NN",
+    default="sample_model",
 )
 parser.add_argument(
     "--output",
@@ -88,7 +90,6 @@ parser.add_argument(
 args = parser.parse_args()
 
 if not args.codabench:
-    input_dir = args.input
     output_dir = args.output
     submission_dir = args.submission
 else:
@@ -98,12 +99,11 @@ else:
     program_dir = "/app/program"
 
 
-from HiggsML.datasets import download_dataset
-data = download_dataset("blackSwan_data") # change to "blackSwan_data" for the actual data
+data = download_dataset(
+    "blackSwan_data"
+)  # change to "blackSwan_data" for the actual data
 
 sys.path.append(submission_dir)
-
-from model import Model
 
 
 ingestion = Ingestion(data)
@@ -111,8 +111,9 @@ ingestion = Ingestion(data)
 # Start timer
 ingestion.start_timer()
 
+
 # initialize submission
-ingestion.init_submission(Model)
+ingestion.init_submission(Model, model_type=args.model_type)
 
 # fit submission
 ingestion.fit_submission()
@@ -161,8 +162,6 @@ ingestion.show_duration()
 # Save duration
 ingestion.save_duration(output_dir)
 
-from HiggsML.score import Scoring
-
 
 # Init scoring
 scoring = Scoring()
@@ -190,4 +189,3 @@ scoring.stop_timer()
 print("\n----------------------------------------------")
 print("[✔] Scoring Program executed successfully!")
 print("----------------------------------------------\n\n")
-

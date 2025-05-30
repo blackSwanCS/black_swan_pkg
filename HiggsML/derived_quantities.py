@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import division
+from numpy import sqrt
+from numpy import sin, cos, cosh, sinh, sqrt, exp
+import numpy as np
+import pandas as pd
 from __future__ import print_function
 from __future__ import absolute_import
 import logging
@@ -26,11 +30,6 @@ Originally written by David Rousseau, and Victor Estrade.
 """
 __version__ = "4.0"
 __author__ = "David Rousseau, and Victor Estrade "
-
-
-import pandas as pd
-import numpy as np
-from numpy import sin, cos, cosh, sinh, sqrt, exp
 
 
 def calcul_int(data):
@@ -155,9 +154,6 @@ def f_DER_deltaeta_jet_jet(data):
         data.PRI_jet_subleading_eta - data.PRI_jet_leading_eta
     ) * (data.PRI_n_jets >= 2) - 25 * (data.PRI_n_jets < 2)
     return data
-
-
-from numpy import sqrt
 
 
 # undefined if PRI_n_jets <= 1:
@@ -306,16 +302,16 @@ def f_DER_lep_eta_centrality(data):
 
     data["difference"] = (data.PRI_jet_leading_eta - data.PRI_jet_subleading_eta) ** 2
     data["moyenne"] = (data.PRI_jet_leading_eta + data.PRI_jet_subleading_eta) / 2
-    
+
     epsilon = 0.0001
     mask = data["difference"] == 0.0
 
     data["DER_lep_eta_centrality"] = exp(
         -4 / (data.difference) * ((data.PRI_lep_eta - data.moyenne) ** 2)
     ) * (data.PRI_n_jets >= 2) - 25 * (data.PRI_n_jets <= 1)
-    
+
     data.loc[mask, "DER_lep_eta_centrality"] = exp(
-        -4 / (data.difference+epsilon) * ((data.PRI_lep_eta - data.moyenne) ** 2)
+        -4 / (data.difference + epsilon) * ((data.PRI_lep_eta - data.moyenne) ** 2)
     ) * (data.PRI_n_jets >= 2) - 25 * (data.PRI_n_jets <= 1)
 
     del data["difference"]
@@ -371,15 +367,15 @@ def DER_data(data):
     data = f_DER_met_phi_centrality(data)
     data = f_DER_lep_eta_centrality(data)
     data = f_del_DER(data)
-    
+
     logger.debug("Derived Quantities calculated successfully")
-    
+
     buffer = io.StringIO()
     data.info(buf=buffer, memory_usage="deep", verbose=False)
     info_str = "Data with Derived Quantities :\n" + buffer.getvalue()
     logger.debug(info_str)
 
-    double_precision_cols = data.select_dtypes(include=['float64']).columns
+    double_precision_cols = data.select_dtypes(include=["float64"]).columns
 
     logger.debug(f"Converting columns {double_precision_cols} to float32")
     data[double_precision_cols] = data[double_precision_cols].astype(np.float32)
