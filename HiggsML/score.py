@@ -91,9 +91,7 @@ class Scoring:
         Args:
             ingestion_duration_file (str): The ingestion duration file.
         """
-        logger.info(
-            f"Reading ingestion duration from {ingestion_duration_file}"
-        )
+        logger.info(f"Reading ingestion duration from {ingestion_duration_file}")
 
         try:
             with open(ingestion_duration_file) as f:
@@ -178,10 +176,8 @@ class Scoring:
             for mu_hat, delta_mu_hat in zip(mu_hats, delta_mu_hats):
                 set_rmses.append(self.RMSE_score(mu, mu_hat, delta_mu_hat))
                 set_maes.append(self.MAE_score(mu, mu_hat, delta_mu_hat))
-            set_interval, set_coverage, set_quantiles_score = (
-                self.Quantiles_Score(
-                    np.repeat(mu, len(p16s)), np.array(p16s), np.array(p84s)
-                )
+            set_interval, set_coverage, set_quantiles_score = self.Quantiles_Score(
+                np.repeat(mu, len(p16s)), np.array(p16s), np.array(p84s)
             )
 
             set_mae = np.mean(set_maes)
@@ -290,9 +286,7 @@ class Scoring:
             return return_coverage
 
         def f(x, n_tries, max_coverage=1e4, one_sigma=0.6827):
-            sigma68 = (
-                np.sqrt(((1 - one_sigma) * one_sigma * n_tries)) / n_tries
-            )
+            sigma68 = np.sqrt(((1 - one_sigma) * one_sigma * n_tries)) / n_tries
 
             if x >= one_sigma - 2 * sigma68 and x <= one_sigma + 2 * sigma68:
                 out = 1
@@ -317,9 +311,7 @@ class Scoring:
         with open(self.score_file, "w") as f_score:
             f_score.write(json.dumps(self.scores_dict, indent=4))
 
-    def save_figure(
-        self, mu, p16s, p84s, set=0, true_mu=None, result_text=None
-    ):
+    def save_figure(self, mu, p16s, p84s, set=0, true_mu=None, result_text=None):
         """
         Save the figure of the mu distribution.
 
@@ -561,9 +553,7 @@ if __name__ == "__main__":
     scoring.start_timer()
 
     # Load ingestion duration
-    ingestion_duration_file = os.path.join(
-        prediction_dir, "ingestion_duration.json"
-    )
+    ingestion_duration_file = os.path.join(prediction_dir, "ingestion_duration.json")
     scoring.load_ingestion_duration(ingestion_duration_file)
 
     print(prediction_dir)

@@ -49,9 +49,7 @@ class V4:
         self.e = ae
         if self.e + 1e-3 < self.p():
             raise ValueError(
-                "Energy is too small! Energy: {}, p: {}".format(
-                    self.e, self.p()
-                )
+                "Energy is too small! Energy: {}, p: {}".format(self.e, self.p())
             )
 
     def copy(self):
@@ -283,9 +281,7 @@ def ttbar_bkg_weight_norm(weights, detailedlabel, systBkgNorm):
     Returns:
         array-like: The scaled weights
     """
-    weights[detailedlabel == "ttbar"] = (
-        weights[detailedlabel == "ttbar"] * systBkgNorm
-    )
+    weights[detailedlabel == "ttbar"] = weights[detailedlabel == "ttbar"] * systBkgNorm
     return weights
 
 
@@ -329,9 +325,7 @@ def all_bkg_weight_norm(weights, label, systBkgNorm):
 # ==================================================================================
 # Manipulate the 4-momenta
 # ==================================================================================
-def mom4_manipulate(
-    data, systTauEnergyScale, systJetEnergyScale, soft_met, seed=31415
-):
+def mom4_manipulate(data, systTauEnergyScale, systJetEnergyScale, soft_met, seed=31415):
     """
     Manipulate primary inputs : the PRI_had_pt PRI_jet_leading_pt
     PRI_jet_subleading_pt and recompute the others values accordingly.
@@ -361,9 +355,7 @@ def mom4_manipulate(
         )
 
         vtauDeltaMinus = vtau.copy()
-        vtauDeltaMinus.scaleFixedM(
-            (1.0 - systTauEnergyScale) / systTauEnergyScale
-        )
+        vtauDeltaMinus.scaleFixedM((1.0 - systTauEnergyScale) / systTauEnergyScale)
         vmet += vtauDeltaMinus
         vmet.pz = 0.0
         vmet.e = vmet.eWithM(0.0)
@@ -392,31 +384,21 @@ def mom4_manipulate(
         )
 
         vj1DeltaMinus = vj1.copy()
-        vj1DeltaMinus.scaleFixedM(
-            (1.0 - systJetEnergyScale) / systJetEnergyScale
-        )
+        vj1DeltaMinus.scaleFixedM((1.0 - systJetEnergyScale) / systJetEnergyScale)
         vmet += vj1DeltaMinus
         vmet.pz = 0.0
         vmet.e = vmet.eWithM(0.0)
 
         vj2 = V4()
         vj2.setPtEtaPhiM(
-            data["PRI_jet_subleading_pt"].where(
-                data["PRI_n_jets"] > 1, other=0
-            ),
-            data["PRI_jet_subleading_eta"].where(
-                data["PRI_n_jets"] > 1, other=0
-            ),
-            data["PRI_jet_subleading_phi"].where(
-                data["PRI_n_jets"] > 1, other=0
-            ),
+            data["PRI_jet_subleading_pt"].where(data["PRI_n_jets"] > 1, other=0),
+            data["PRI_jet_subleading_eta"].where(data["PRI_n_jets"] > 1, other=0),
+            data["PRI_jet_subleading_phi"].where(data["PRI_n_jets"] > 1, other=0),
             0.0,
         )
 
         vj2DeltaMinus = vj2.copy()
-        vj2DeltaMinus.scaleFixedM(
-            (1.0 - systJetEnergyScale) / systJetEnergyScale
-        )
+        vj2DeltaMinus.scaleFixedM((1.0 - systJetEnergyScale) / systJetEnergyScale)
         vmet += vj2DeltaMinus
         vmet.pz = 0.0
         vmet.e = vmet.eWithM(0.0)
@@ -444,15 +426,9 @@ def mom4_manipulate(
     data["PRI_lep_phi"] = data["PRI_lep_phi"].round(decimals=DECIMALS)
     data["PRI_met"] = data["PRI_met"].round(decimals=DECIMALS)
     data["PRI_met_phi"] = data["PRI_met_phi"].round(decimals=DECIMALS)
-    data["PRI_jet_leading_pt"] = data["PRI_jet_leading_pt"].round(
-        decimals=DECIMALS
-    )
-    data["PRI_jet_leading_eta"] = data["PRI_jet_leading_eta"].round(
-        decimals=DECIMALS
-    )
-    data["PRI_jet_leading_phi"] = data["PRI_jet_leading_phi"].round(
-        decimals=DECIMALS
-    )
+    data["PRI_jet_leading_pt"] = data["PRI_jet_leading_pt"].round(decimals=DECIMALS)
+    data["PRI_jet_leading_eta"] = data["PRI_jet_leading_eta"].round(decimals=DECIMALS)
+    data["PRI_jet_leading_phi"] = data["PRI_jet_leading_phi"].round(decimals=DECIMALS)
     data["PRI_jet_subleading_pt"] = data["PRI_jet_subleading_pt"].round(
         decimals=DECIMALS
     )
@@ -471,9 +447,9 @@ def make_unweighted_set(data_set):
     keys = ["htautau", "ztautau", "ttbar", "diboson"]
     unweighted_set = {}
     for key in keys:
-        unweighted_set[key] = data_set["data"][
-            data_set["detailedlabel"] == key
-        ].sample(frac=1, random_state=31415)
+        unweighted_set[key] = data_set["data"][data_set["detailedlabel"] == key].sample(
+            frac=1, random_state=31415
+        )
 
     return unweighted_set
 
@@ -604,9 +580,7 @@ def systematics(
             )
 
         if bkg_scale is not None:
-            weights = all_bkg_weight_norm(
-                weights, data_syst["labels"], bkg_scale
-            )
+            weights = all_bkg_weight_norm(weights, data_syst["labels"], bkg_scale)
 
         data_syst["weights"] = weights
 
@@ -682,9 +656,7 @@ def get_bootstrapped_dataset(
 
         if poisson:
             random_state = np.random.RandomState(seed=Seed)
-            new_weights = random_state.poisson(
-                bkg_norm[key] * test_set[key]["weights"]
-            )
+            new_weights = random_state.poisson(bkg_norm[key] * test_set[key]["weights"])
         else:
             new_weights = bkg_norm[key] * test_set[key]["weights"]
 
@@ -737,15 +709,11 @@ def generate_pseudo_exp_data(data, set_mu=1.0, dict_systematics=None, seed=0):
     random_state = np.random.RandomState(seed)
 
     if dict_systematics["tes"]:
-        tes = np.clip(
-            random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01
-        )
+        tes = np.clip(random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01)
     else:
         tes = 1.0
     if dict_systematics["jes"]:
-        jes = np.clip(
-            random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01
-        )
+        jes = np.clip(random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01)
     else:
         jes = 1.0
     if dict_systematics["soft_met"]:
@@ -804,16 +772,14 @@ def repeat_rows_by_weight(data_set, seed=31415):
     data_set["weights"] = data_set["weights"].astype(int)
 
     # Repeat rows based on the 'weights' column
-    repeated_data_set = data_set.loc[
-        data_set.index.repeat(data_set["weights"])
-    ]
+    repeated_data_set = data_set.loc[data_set.index.repeat(data_set["weights"])]
 
     # Reset index to avoid duplicate indices
     repeated_data_set.reset_index(drop=True, inplace=True)
 
-    repeated_data_set = repeated_data_set.sample(
-        frac=1, random_state=seed
-    ).reset_index(drop=True)
+    repeated_data_set = repeated_data_set.sample(frac=1, random_state=seed).reset_index(
+        drop=True
+    )
 
     repeated_data_set.drop(columns="weights", inplace=True)
 

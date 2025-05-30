@@ -90,9 +90,7 @@ def pair_plots(dfall, target, sample_size=10, columns=None):
 
     ax = sns.PairGrid(df_sample, hue="Label")
     ax.map_upper(sns.scatterplot, alpha=0.5, size=0.3)
-    ax.map_lower(
-        sns.kdeplot, fill=True, levels=5, alpha=0.5
-    )  # Change alpha value here
+    ax.map_lower(sns.kdeplot, fill=True, levels=5, alpha=0.5)  # Change alpha value here
     ax.map_diag(
         sns.histplot,
         alpha=0.5,
@@ -257,9 +255,7 @@ def pair_plots_syst(dfall, df_syst, sample_size=100, columns=None):
 
     ax = sns.PairGrid(df_sample, hue="syst")
     ax.map_upper(sns.scatterplot, alpha=0.5, size=0.3)
-    ax.map_lower(
-        sns.kdeplot, fill=True, levels=5, alpha=0.5
-    )  # Change alpha value here
+    ax.map_lower(sns.kdeplot, fill=True, levels=5, alpha=0.5)  # Change alpha value here
     ax.map_diag(
         sns.histplot,
         alpha=0.5,
@@ -272,9 +268,7 @@ def pair_plots_syst(dfall, df_syst, sample_size=100, columns=None):
     plt.close()
 
 
-def histogram_syst(
-    dfall, df_syst, weights, weight_syst, columns=None, nbin=25
-):
+def histogram_syst(dfall, df_syst, weights, weight_syst, columns=None, nbin=25):
 
     if columns is None:
         columns = columns
@@ -298,9 +292,7 @@ def histogram_syst(
 
     # Create a figure and a grid of subplots
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(8 * n_cols, 6 * n_rows))
-    axes = (
-        axes.flatten()
-    )  # Flatten the 2D array of axes to 1D for easy indexing
+    axes = axes.flatten()  # Flatten the 2D array of axes to 1D for easy indexing
 
     for i, column in enumerate(columns):
 
@@ -311,12 +303,10 @@ def histogram_syst(
         upper_bound = np.percentile(df_sample[column], upper_percentile)
 
         df_clipped = df_sample[
-            (df_sample[column] >= lower_bound)
-            & (df_sample[column] <= upper_bound)
+            (df_sample[column] >= lower_bound) & (df_sample[column] <= upper_bound)
         ]
         weights_clipped = weights[
-            (df_sample[column] >= lower_bound)
-            & (df_sample[column] <= upper_bound)
+            (df_sample[column] >= lower_bound) & (df_sample[column] <= upper_bound)
         ]
 
         df_clipped_syst = df_sample_syst[
