@@ -1,5 +1,4 @@
 from HiggsML.score import Scoring
-from model import Model
 from HiggsML.datasets import download_dataset
 import sys
 import argparse
@@ -111,6 +110,7 @@ ingestion = Ingestion(data)
 # Start timer
 ingestion.start_timer()
 
+from model import Model
 
 # initialize submission
 ingestion.init_submission(Model, model_type=args.model_type)
