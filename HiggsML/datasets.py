@@ -107,7 +107,8 @@ class Data:
         if "total_rows" in self.metadata:
             self.total_rows = self.metadata["total_rows"]
         else:
-            # If total_rows is not in metadata, calculate it from the row groups
+            # If total_rows is not in metadata, calculate it from the row
+            # groups
             self.total_rows = sum(
                 self.parquet_file.metadata.row_group(i).num_rows
                 for i in range(self.parquet_file.num_row_groups)
@@ -176,7 +177,8 @@ class Data:
             row_group = self.parquet_file.read_row_group(row_group_index).to_pandas()
             row_group_size = len(row_group)
 
-            # Determine indices within the current row group that fall in the selected range
+            # Determine indices within the current row group that fall in the
+            # selected range
             within_group_indices = (
                 selected_indices[
                     (selected_indices >= current_row)

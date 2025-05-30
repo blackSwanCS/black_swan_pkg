@@ -1,3 +1,6 @@
+from HiggsML.score import Scoring
+from model import Model
+from HiggsML.datasets import download_dataset
 import sys
 import argparse
 import pathlib
@@ -96,15 +99,11 @@ else:
     program_dir = "/app/program"
 
 
-from HiggsML.datasets import download_dataset
-
 data = download_dataset(
     "blackSwan_data"
 )  # change to "blackSwan_data" for the actual data
 
 sys.path.append(submission_dir)
-
-from model import Model
 
 
 ingestion = Ingestion(data)
@@ -162,8 +161,6 @@ ingestion.show_duration()
 
 # Save duration
 ingestion.save_duration(output_dir)
-
-from HiggsML.score import Scoring
 
 
 # Init scoring

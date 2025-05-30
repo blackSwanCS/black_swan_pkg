@@ -1,6 +1,7 @@
 # ------------------------------------------
 # Imports
 # ------------------------------------------
+from HiggsML.systematics import generate_pseudo_exp_data
 import numpy as np
 import os
 from datetime import datetime as dt
@@ -22,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_INGESTION_SEED = 31415
 
-from HiggsML.systematics import generate_pseudo_exp_data
 
 # ------------------------------------------
 # Ingestion Class
@@ -160,7 +160,8 @@ class Ingestion:
         # get test set indices per set
         test_set_indices = np.arange(0, num_pseudo_experiments)
 
-        # create a product of set and test set indices all combinations of tuples
+        # create a product of set and test set indices all combinations of
+        # tuples
         all_combinations = list(product(set_indices, test_set_indices))
         # randomly shuffle all combinations of indices
         random_state_initial = np.random.RandomState(initial_seed)
@@ -211,7 +212,8 @@ class Ingestion:
 
             # Extract all available fields from the first test_set_dict
             if set_result and isinstance(set_result, list) and len(set_result) > 0:
-                # Get all possible keys from the first dictionary (assuming all have same keys)
+                # Get all possible keys from the first dictionary (assuming all
+                # have same keys)
                 available_keys = set_result[0].keys()
 
                 # For each key, collect all values across test_set_dicts

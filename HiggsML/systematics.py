@@ -125,7 +125,8 @@ class V4:
             m (float): mass
         """
 
-        return np.sqrt(np.abs(self.e**2 - self.p2()))  # abs is needed for protection
+        # abs is needed for protection
+        return np.sqrt(np.abs(self.e**2 - self.p2()))
 
     def eta(self):
         """
@@ -764,7 +765,8 @@ def generate_pseudo_exp_data(data, set_mu=1.0, dict_systematics=None, seed=0):
 # Assuming 'data_set' is a DataFrame with a 'weights' column
 def repeat_rows_by_weight(data_set, seed=31415):
 
-    # Ensure 'weights' column is integer, as fractional weights don't make sense for row repetition
+    # Ensure 'weights' column is integer, as fractional weights don't make
+    # sense for row repetition
     data_set["weights"] = data_set["weights"].astype(int)
 
     # Repeat rows based on the 'weights' column

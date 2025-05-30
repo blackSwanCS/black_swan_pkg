@@ -279,7 +279,8 @@ def histogram_syst(dfall, df_syst, weights, weight_syst, columns=None, nbin=25):
 
     # Number of rows and columns in the subplot grid
     n_cols = 3  # Number of columns in the subplot grid
-    n_rows = int(np.ceil(len(columns) / n_cols))  # Calculate the number of rows needed
+    # Calculate the number of rows needed
+    n_rows = int(np.ceil(len(columns) / n_cols))
 
     # Create a figure and a grid of subplots
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(8 * n_cols, 6 * n_rows))
@@ -386,7 +387,8 @@ def event_vise_syst(dfall, df_syst, columns=None, sample_size=100):
 
     # Number of rows and columns in the subplot grid
     n_cols = 3  # Number of columns in the subplot grid
-    n_rows = int(np.ceil(len(columns) / n_cols))  # Calculate the number of rows needed
+    # Calculate the number of rows needed
+    n_rows = int(np.ceil(len(columns) / n_cols))
 
     # Create a figure and a grid of subplots
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(8 * n_cols, 6 * n_rows))

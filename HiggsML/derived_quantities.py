@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import division
+from numpy import sqrt
+from numpy import sin, cos, cosh, sinh, sqrt, exp
+import numpy as np
+import pandas as pd
 from __future__ import print_function
 from __future__ import absolute_import
 import logging
@@ -26,11 +30,6 @@ Originally written by David Rousseau, and Victor Estrade.
 """
 __version__ = "4.0"
 __author__ = "David Rousseau, and Victor Estrade "
-
-
-import pandas as pd
-import numpy as np
-from numpy import sin, cos, cosh, sinh, sqrt, exp
 
 
 def calcul_int(data):
@@ -155,9 +154,6 @@ def f_DER_deltaeta_jet_jet(data):
         data.PRI_jet_subleading_eta - data.PRI_jet_leading_eta
     ) * (data.PRI_n_jets >= 2) - 25 * (data.PRI_n_jets < 2)
     return data
-
-
-from numpy import sqrt
 
 
 # undefined if PRI_n_jets <= 1:
