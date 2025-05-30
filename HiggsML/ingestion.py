@@ -104,7 +104,11 @@ class Ingestion:
         duration_file = os.path.join(output_dir, "ingestion_duration.json")
         if duration is not None:
             with open(duration_file, "w") as f:
-                f.write(json.dumps({"ingestion_duration": duration_in_mins}, indent=4))
+                f.write(
+                    json.dumps(
+                        {"ingestion_duration": duration_in_mins}, indent=4
+                    )
+                )
 
     def load_train_set(self, **kwargs):
         """
@@ -140,7 +144,9 @@ class Ingestion:
         logger.info("Calling fit method of submitted model")
         self.model.fit()
 
-    def predict_submission(self, test_settings, initial_seed=DEFAULT_INGESTION_SEED):
+    def predict_submission(
+        self, test_settings, initial_seed=DEFAULT_INGESTION_SEED
+    ):
         """
         Make predictions using the submitted model.
 
@@ -148,7 +154,8 @@ class Ingestion:
             test_settings (dict): The test settings.
         """
         logger.info(
-            "Calling predict method of submitted model with seed: %s", initial_seed
+            "Calling predict method of submitted model with seed: %s",
+            initial_seed,
         )
 
         dict_systematics = test_settings["systematics"]
@@ -174,7 +181,11 @@ class Ingestion:
         for set_index, test_set_index in all_combinations:
 
             # create a seed
-            seed = (set_index * num_pseudo_experiments) + test_set_index + initial_seed
+            seed = (
+                (set_index * num_pseudo_experiments)
+                + test_set_index
+                + initial_seed
+            )
 
             # get mu value of set from test settings
             set_mu = test_settings["ground_truth_mus"][set_index]
@@ -211,7 +222,11 @@ class Ingestion:
             ingestion_result_dict = {}
 
             # Extract all available fields from the first test_set_dict
-            if set_result and isinstance(set_result, list) and len(set_result) > 0:
+            if (
+                set_result
+                and isinstance(set_result, list)
+                and len(set_result) > 0
+            ):
                 # Get all possible keys from the first dictionary (assuming all
                 # have same keys)
                 available_keys = set_result[0].keys()
@@ -220,7 +235,8 @@ class Ingestion:
                 for field in available_keys:
                     if field != "test_set_index":  # Skip the sorting key
                         field_values = [
-                            test_set_dict[field] for test_set_dict in set_result
+                            test_set_dict[field]
+                            for test_set_dict in set_result
                         ]
                         ingestion_result_dict[
                             field + "s" if not field.endswith("s") else field
@@ -236,6 +252,8 @@ class Ingestion:
             output_dir (str): The output directory to save the result files.
         """
         for key in self.results_dict.keys():
-            result_file = os.path.join(output_dir, "result_" + str(key) + ".json")
+            result_file = os.path.join(
+                output_dir, "result_" + str(key) + ".json"
+            )
             with open(result_file, "w") as f:
                 f.write(json.dumps(self.results_dict[key], indent=4))

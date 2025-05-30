@@ -26,12 +26,8 @@ logger = logging.getLogger(__name__)
 test_set_settings = None
 
 ZENODO_URL = "https://zenodo.org/records/15131565/files/FAIR_Universe_HiggsML_data.zip?download=1"
-BLACK_SWAN_DATA_URL = (
-    "https://www.codabench.org/datasets/download/56bf8a3e-45b7-4912-8586-366c18c82586/"
-)
-SAMPLE_DATA_URL = (
-    "https://www.codabench.org/datasets/download/77341e17-f23a-47d9-87eb-ebceee452a14/"
-)
+BLACK_SWAN_DATA_URL = "https://www.codabench.org/datasets/download/56bf8a3e-45b7-4912-8586-366c18c82586/"
+SAMPLE_DATA_URL = "https://www.codabench.org/datasets/download/77341e17-f23a-47d9-87eb-ebceee452a14/"
 
 available_datasets = {
     "neurips2024_data": ZENODO_URL,
@@ -72,7 +68,9 @@ class Data:
         self.__train_set = None
         self.__test_set = None
 
-        parquet_files = [f for f in os.listdir(input_dir) if f.endswith(".parquet")]
+        parquet_files = [
+            f for f in os.listdir(input_dir) if f.endswith(".parquet")
+        ]
         meta_data_files = [
             f for f in os.listdir(input_dir) if f.endswith("_metadata.json")
         ]
@@ -90,7 +88,9 @@ class Data:
             with open(croissant_file, "r", encoding="utf-8") as f:
                 self.metadata = json.load(f)
         except FileNotFoundError:
-            logger.warning("Metadata file not found. Proceeding without metadata.")
+            logger.warning(
+                "Metadata file not found. Proceeding without metadata."
+            )
             self.metadata = {}
         except json.JSONDecodeError:
             logger.warning(
@@ -98,7 +98,9 @@ class Data:
             )
             self.metadata = {}
         except Exception as e:
-            logger.warning(f"An error occurred while reading the metadata file: {e}")
+            logger.warning(
+                f"An error occurred while reading the metadata file: {e}"
+            )
             self.metadata = {}
 
         self.parquet_file = pq.ParquetFile(train_data_file)
@@ -136,7 +138,9 @@ class Data:
                 train_size = min(train_size, self.total_rows - self.test_size)
             elif isinstance(train_size, float):
                 if 0.0 <= train_size <= 1.0:
-                    train_size = int(train_size * (self.total_rows - self.test_size))
+                    train_size = int(
+                        train_size * (self.total_rows - self.test_size)
+                    )
                 else:
                     raise ValueError("Sample size must be between 0.0 and 1.0")
             else:
@@ -147,17 +151,23 @@ class Data:
             elif isinstance(selected_indices, np.ndarray):
                 pass
             else:
-                raise ValueError("Selected indices must be a list or a numpy array")
+                raise ValueError(
+                    "Selected indices must be a list or a numpy array"
+                )
             train_size = len(selected_indices)
         else:
             train_size = self.total_rows - self.test_size
 
         if train_size > self.total_rows - self.test_size:
-            raise ValueError("Sample size exceeds the number of available rows")
+            raise ValueError(
+                "Sample size exceeds the number of available rows"
+            )
 
         if selected_indices is None:
             selected_indices = np.random.choice(
-                (self.total_rows - self.test_size), size=train_size, replace=False
+                (self.total_rows - self.test_size),
+                size=train_size,
+                replace=False,
             )
 
         selected_train_indices = np.sort(selected_indices) + self.test_size
@@ -174,7 +184,9 @@ class Data:
         current_row = 0
         sampled_df = pd.DataFrame()
         for row_group_index in range(self.parquet_file.num_row_groups):
-            row_group = self.parquet_file.read_row_group(row_group_index).to_pandas()
+            row_group = self.parquet_file.read_row_group(
+                row_group_index
+            ).to_pandas()
             row_group_size = len(row_group)
 
             # Determine indices within the current row group that fall in the
@@ -187,7 +199,8 @@ class Data:
                 - current_row
             )
             sampled_df = pd.concat(
-                [sampled_df, row_group.iloc[within_group_indices]], ignore_index=True
+                [sampled_df, row_group.iloc[within_group_indices]],
+                ignore_index=True,
             )
 
             # Update the current row count
@@ -202,9 +215,9 @@ class Data:
         if "sum_weights" in self.metadata:
             sum_weights = self.metadata["sum_weights"]
             if sum_weights > 0:
-                sampled_df["weights"] = (sum_weights * sampled_df["weights"]) / sum(
-                    sampled_df["weights"]
-                )
+                sampled_df["weights"] = (
+                    sum_weights * sampled_df["weights"]
+                ) / sum(sampled_df["weights"])
             else:
                 logger.warning("Sum of weights is zero. No balancing applied.")
 
@@ -235,7 +248,9 @@ class Data:
 
         for key in self.__test_set.keys():
             buffer = io.StringIO()
-            self.__test_set[key].info(buf=buffer, memory_usage="deep", verbose=False)
+            self.__test_set[key].info(
+                buf=buffer, memory_usage="deep", verbose=False
+            )
             info_str = str(key) + ":\n" + buffer.getvalue()
 
             logger.debug(info_str)

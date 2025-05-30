@@ -1,9 +1,10 @@
+import logging
+import os
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns  # seaborn for nice plot quicker
-import os
-import logging
+import seaborn as sns
 
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 
@@ -23,7 +24,9 @@ def correlation_plots(dfall, target, columns=None):
     Plots correlation matrices of the dataset features.
 
     Args:
-    * columns (list): The list of column names to consider (default: None, which includes all columns).
+    * dfall : Pandas Dataframe
+    * target : numpy array with labels
+    * columns : List of column names to consider
 
     .. Image:: images/correlation_plots.png
     """
@@ -58,8 +61,9 @@ def pair_plots(dfall, target, sample_size=10, columns=None):
     Plots pair plots of the dataset features.
 
     Args:
+        * target : numpy array with labels
         * sample_size (int): The number of samples to consider (default: 10).
-        * columns (list): The list of column names to consider (default: None, which includes all columns).
+        * columns : List of column names to consider
 
     .. Image:: images/pair_plot.png
     """
@@ -86,7 +90,9 @@ def pair_plots(dfall, target, sample_size=10, columns=None):
 
     ax = sns.PairGrid(df_sample, hue="Label")
     ax.map_upper(sns.scatterplot, alpha=0.5, size=0.3)
-    ax.map_lower(sns.kdeplot, fill=True, levels=5, alpha=0.5)  # Change alpha value here
+    ax.map_lower(
+        sns.kdeplot, fill=True, levels=5, alpha=0.5
+    )  # Change alpha value here
     ax.map_diag(
         sns.histplot,
         alpha=0.5,
@@ -119,8 +125,12 @@ def stacked_histogram(
     Plots a stacked histogram of a specific field in the dataset.
 
     Args:
-        * field_name (str): The name of the field to plot.
-        * mu_hat (float): The value of mu (default: 1.0).
+        * dfall : Pandas Dataframe
+        * target : numpy array with labels
+        * weights : numpy array with event weights
+        * weights : numpy array with detailed labels of the events
+        * detailed_label : The name of the field to plot.
+        * mu_hat : The value of mu (default: 1.0).
         * bins (int): The number of bins for the histogram (default: 30).
 
     .. Image:: images/stacked_histogram.png
@@ -247,7 +257,9 @@ def pair_plots_syst(dfall, df_syst, sample_size=100, columns=None):
 
     ax = sns.PairGrid(df_sample, hue="syst")
     ax.map_upper(sns.scatterplot, alpha=0.5, size=0.3)
-    ax.map_lower(sns.kdeplot, fill=True, levels=5, alpha=0.5)  # Change alpha value here
+    ax.map_lower(
+        sns.kdeplot, fill=True, levels=5, alpha=0.5
+    )  # Change alpha value here
     ax.map_diag(
         sns.histplot,
         alpha=0.5,
@@ -260,7 +272,9 @@ def pair_plots_syst(dfall, df_syst, sample_size=100, columns=None):
     plt.close()
 
 
-def histogram_syst(dfall, df_syst, weights, weight_syst, columns=None, nbin=25):
+def histogram_syst(
+    dfall, df_syst, weights, weight_syst, columns=None, nbin=25
+):
 
     if columns is None:
         columns = columns
@@ -284,7 +298,9 @@ def histogram_syst(dfall, df_syst, weights, weight_syst, columns=None, nbin=25):
 
     # Create a figure and a grid of subplots
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(8 * n_cols, 6 * n_rows))
-    axes = axes.flatten()  # Flatten the 2D array of axes to 1D for easy indexing
+    axes = (
+        axes.flatten()
+    )  # Flatten the 2D array of axes to 1D for easy indexing
 
     for i, column in enumerate(columns):
 
@@ -295,10 +311,12 @@ def histogram_syst(dfall, df_syst, weights, weight_syst, columns=None, nbin=25):
         upper_bound = np.percentile(df_sample[column], upper_percentile)
 
         df_clipped = df_sample[
-            (df_sample[column] >= lower_bound) & (df_sample[column] <= upper_bound)
+            (df_sample[column] >= lower_bound)
+            & (df_sample[column] <= upper_bound)
         ]
         weights_clipped = weights[
-            (df_sample[column] >= lower_bound) & (df_sample[column] <= upper_bound)
+            (df_sample[column] >= lower_bound)
+            & (df_sample[column] <= upper_bound)
         ]
 
         df_clipped_syst = df_sample_syst[
@@ -357,9 +375,10 @@ def event_vise_syst(dfall, df_syst, columns=None, sample_size=100):
     """
     Plots the event-wise shift between the nominal dataset and the systemalically shifted dataset.
     Args:
-        * df_syst (DataFrame): The system dataset.
-        * sample_size (int): The number of samples to consider (default: 100).
-        * columns (list): The list of column names to consider (default: None, which includes all columns).
+        * dfall : The nominal dataset.
+        * df_syst : The systematics shifted dataset.
+        * sample_size : The number of samples to consider (default: 100).
+        * columns : The list of column names to consider.
 
     ..Images:: ../images/event_vise_syst.png
     """
@@ -392,7 +411,7 @@ def event_vise_syst(dfall, df_syst, columns=None, sample_size=100):
 
     # Create a figure and a grid of subplots
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(8 * n_cols, 6 * n_rows))
-    axes = axes.flatten()  # Flatten the 2D array of axes to 1D for easy indexing
+    axes = axes.flatten()
 
     for i, column in enumerate(columns):
         field = df_sample[column]
@@ -415,8 +434,8 @@ def visualize_scatter(ingestion_result_dict, ground_truth_mus):
     Plots a scatter Plot of ground truth vs. predicted mu values.
 
     Args:
-        * ingestion_result_dict (dict): A dictionary containing the ingestion results.
-        * ground_truth_mus (dict): A dictionary of ground truth mu values.
+        * ingestion_result_dict : A dictionary containing the ingestion results.
+        * ground_truth_mus : A dictionary of ground truth mu values.
 
     .. Image:: images/scatter_plot_mu.png
     """
@@ -439,8 +458,8 @@ def visualize_coverage(ingestion_result_dict, ground_truth_mus):
     Plots a coverage plot of the mu values.
 
     Args:
-        * ingestion_result_dict (dict): A dictionary containing the ingestion results.
-        * ground_truth_mus (dict): A dictionary of ground truth mu values.
+        * ingestion_result_dict : A dictionary containing the ingestion results.
+        * ground_truth_mus : A dictionary of ground truth mu values.
 
     .. Image:: images/coverage_plot.png
     """
@@ -458,7 +477,11 @@ def visualize_coverage(ingestion_result_dict, ground_truth_mus):
         for i, (p16, p84) in enumerate(zip(p16s, p84s)):
             if i == 0:
                 plt.hlines(
-                    y=i, xmin=p16, xmax=p84, colors="b", label="Coverage interval"
+                    y=i,
+                    xmin=p16,
+                    xmax=p84,
+                    colors="b",
+                    label="Coverage interval",
                 )
             else:
                 plt.hlines(y=i, xmin=p16, xmax=p84, colors="b")
