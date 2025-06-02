@@ -15,7 +15,19 @@ HiggsML.ingestion module
    :members:
    :show-inheritance:
 
+HiggsML.systematics module
+------------------------
 
+.. automodule:: HiggsML.systematics
+   :members:
+   :show-inheritance:
+
+HiggsML.derived_quantities module
+------------------------
+
+.. automodule:: HiggsML.derived_quantities
+   :members:
+   :show-inheritance:
 
 HiggsML.score module
 --------------------
