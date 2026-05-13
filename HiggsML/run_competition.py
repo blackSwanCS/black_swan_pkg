@@ -28,17 +28,21 @@ parser.add_argument(
     help="Output file location",
     default=os.path.join(working_dir, "sample_result_submission"),
 )
+
+parser.add_argument(
+    "--input",
+    "-i",
+    help="Input file location",
+    default=None,
+)
+
 parser.add_argument(
     "--submission",
     "-s",
     help="Submission file location",
     default=os.path.join(working_dir, "sample_code_submission"),
 )
-parser.add_argument(
-    "--codabench",
-    help="True when running on Codabench",
-    action="store_true",
-)
+
 
 parser.add_argument(
     "--systematics-tes",
@@ -88,19 +92,13 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-if not args.codabench:
-    output_dir = args.output
-    submission_dir = args.submission
+output_dir = args.output
+submission_dir = args.submission
+
+if args.input is not None:
+    data = Data(args.input)
 else:
-    input_dir = "/app/input_data"
-    output_dir = "/app/output"
-    submission_dir = "/app/ingested_program"
-    program_dir = "/app/program"
-
-
-data = download_dataset(
-    "blackSwan_data"
-)  # change to "blackSwan_data" for the actual data
+    data = download_dataset("blackSwan_data")
 
 sys.path.append(submission_dir)
 
