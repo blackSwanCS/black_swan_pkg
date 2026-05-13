@@ -98,10 +98,8 @@ submission_dir = args.submission
 if args.input is not None:
     data = Data(args.input)
 else:
-    data = download_dataset(
-        "blackSwan_data"
-    ) 
-    
+    data = download_dataset("blackSwan_data")
+
 sys.path.append(submission_dir)
 
 
