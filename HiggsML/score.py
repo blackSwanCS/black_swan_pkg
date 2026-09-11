@@ -13,6 +13,9 @@ import numpy as np
 import mpld3
 import argparse
 
+from analysisweb import Status
+
+
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 
 
@@ -112,6 +115,8 @@ class Scoring:
             )
             self.ingestion_duration = 0
 
+        return {"Status": Status.SUCCESS}
+
     def load_ingestion_results(self, prediction_dir="./", score_dir="./"):
         """
         Load the ingestion results.
@@ -144,6 +149,8 @@ class Scoring:
         self.score_dir = score_dir
         logger.info(f"Read ingestion results from {prediction_dir}")
         html_heading("Detailed Results", self.html_file)
+
+        return {"Status": Status.SUCCESS}
 
     def compute_scores(self, test_settings):
         """
@@ -219,6 +226,7 @@ class Scoring:
 
         html_text(self.scores_dict, self.html_file, font_size="30px")
         print("[✔]")
+        return {"Status": Status.SUCCESS, **self.scores_dict}
 
     def RMSE_score(self, mu, mu_hat, delta_mu_hat):
         """
@@ -311,6 +319,8 @@ class Scoring:
         with open(self.score_file, "w") as f_score:
             f_score.write(json.dumps(self.scores_dict, indent=4))
 
+        return {"Status": Status.SUCCESS}
+
     def save_figure(self, mu, p16s, p84s, set=0, true_mu=None, result_text=None):
         """
         Save the figure of the mu distribution.
@@ -380,6 +390,8 @@ class Scoring:
             result_text = f"Set {set} - $\\mu$ distribution"
 
         save_plot_to_html(plt, self.html_file, result_text, append=True)
+
+        return {"Status": Status.SUCCESS}
 
 
 def html_text(data, html_fle, font_size="20px"):

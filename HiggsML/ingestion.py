@@ -1,13 +1,17 @@
 # ------------------------------------------
 # Imports
 # ------------------------------------------
-from HiggsML.systematics import generate_pseudo_exp_data
 import numpy as np
 import os
 from datetime import datetime as dt
 import json
 from itertools import product
 import logging
+
+from analysisweb import Status
+
+from .systematics import generate_pseudo_exp_data
+
 
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 
@@ -61,11 +65,15 @@ class Ingestion:
         """
         self.start_time = dt.now()
 
+        return {"Status": Status.SUCCESS}
+
     def stop_timer(self):
         """
         Stop the timer for the ingestion process.
         """
         self.end_time = dt.now()
+
+        return {"Status": Status.SUCCESS}
 
     def get_duration(self):
         """
@@ -92,6 +100,8 @@ class Ingestion:
         print(f"[✔] Total duration: {self.get_duration()}")
         print("---------------------------------")
 
+        return {"Status": Status.SUCCESS}
+
     def save_duration(self, output_dir=None):
         """
         Save the duration of the ingestion process to a file.
@@ -104,7 +114,13 @@ class Ingestion:
         duration_file = os.path.join(output_dir, "ingestion_duration.json")
         if duration is not None:
             with open(duration_file, "w") as f:
-                f.write(json.dumps({"ingestion_duration": duration_in_mins}, indent=4))
+                f.write(
+                    json.dumps(
+                        {"ingestion_duration": duration_in_mins}, indent=4, default=str
+                    )
+                )
+
+        return {"Status": Status.SUCCESS}
 
     def load_train_set(self, **kwargs):
         """
@@ -116,7 +132,7 @@ class Ingestion:
         self.data.load_train_set(**kwargs)
         return self.data.get_train_set()
 
-    def init_submission(self, Model, model_type="sample_model"):
+    def init_submission(self, Model, **kwargs):
         """
         Initialize the submitted model.
 
@@ -127,11 +143,11 @@ class Ingestion:
         from HiggsML.systematics import systematics
 
         self.model = Model(
-            get_train_set=self.load_train_set,
-            systematics=systematics,
-            model_type=model_type,
+            get_train_set=self.load_train_set, systematics=systematics, **kwargs
         )
         self.data.delete_train_set()
+
+        return {"Status": Status.SUCCESS}
 
     def fit_submission(self):
         """
@@ -139,6 +155,8 @@ class Ingestion:
         """
         logger.info("Calling fit method of submitted model")
         self.model.fit()
+
+        return {"Status": Status.SUCCESS}
 
     def predict_submission(self, test_settings, initial_seed=DEFAULT_INGESTION_SEED):
         """
@@ -195,6 +213,8 @@ class Ingestion:
                 self.results_dict[set_index] = []
             self.results_dict[set_index].append(predicted_dict)
 
+        return {"Status": Status.SUCCESS}
+
     def process_results_dict(self):
         # loop over sets
         for key in self.results_dict.keys():
@@ -229,6 +249,8 @@ class Ingestion:
 
             self.results_dict[key] = ingestion_result_dict
 
+        return {"Status": Status.SUCCESS}
+
     def save_result(self, output_dir=None):
         """
         Save the ingestion result to files.
@@ -239,4 +261,6 @@ class Ingestion:
         for key in self.results_dict.keys():
             result_file = os.path.join(output_dir, "result_" + str(key) + ".json")
             with open(result_file, "w") as f:
-                f.write(json.dumps(self.results_dict[key], indent=4))
+                f.write(json.dumps(self.results_dict[key], indent=4, default=str))
+
+        return {"Status": Status.SUCCESS}
