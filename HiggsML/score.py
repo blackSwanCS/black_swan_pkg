@@ -14,10 +14,10 @@ import mpld3
 import argparse
 
 from analysisweb import Status
-
+from .visualization import visualize_coverage
+from analysisweb.reports import image_gallery_to_html
 
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-
 
 logging.basicConfig(
     level=getattr(
@@ -67,6 +67,7 @@ class Scoring:
         self.end_time = None
         self.ingestion_results = None
         self.ingestion_duration = None
+        self.set_results = {}
 
         self.scores_dict = {}
 
@@ -133,10 +134,14 @@ class Scoring:
                     file.split("_")[1].split(".")[0]
                 )  # file format: result_{set_index}.json
                 results_file = os.path.join(prediction_dir, file)
-                with open(results_file) as f:
-                    ingestion_results_with_set_index.append(
-                        {"set_index": set_index, "results": json.load(f)}
-                    )
+
+                with open(results_file, "r") as f:
+                    content = f.read()
+                ingestion_results_with_set_index.append(
+                    {"set_index": set_index, "results": json.loads(content)}
+                )
+
+
         ingestion_results_with_set_index = sorted(
             ingestion_results_with_set_index, key=lambda x: x["set_index"]
         )
@@ -148,7 +153,6 @@ class Scoring:
         self.html_file = os.path.join(score_dir, "detailed_results.html")
         self.score_dir = score_dir
         logger.info(f"Read ingestion results from {prediction_dir}")
-        html_heading("Detailed Results", self.html_file)
 
         return {"Status": Status.SUCCESS}
 
@@ -190,16 +194,17 @@ class Scoring:
             set_mae = np.mean(set_maes)
             set_rmse = np.mean(set_rmses)
 
-            result_text = f"Set {i} \nMAE: {set_mae.round(4)} \nRMSE: {set_rmse.round(4)} \nInterval: {set_interval.round(4)} \nCoverage: {set_coverage.round(4)} \nQuantiles Score: {set_quantiles_score.round(4)}"
-
-            self.save_figure(
-                mu=np.mean(mu_hats),
-                p16s=p16s,
-                p84s=p84s,
-                set=i,
-                true_mu=mu,
-                result_text=result_text,
-            )
+            self.set_results[f"set_{i}"] = {
+                "mu_hats" : mu_hats,
+                "true_mu":mu,
+                "p16":p16s,
+                "p84":p84s,
+                "set_interval":set_interval.round(4),
+                "set_coverage":set_coverage.round(4),
+                "set_quantiles_score":set_quantiles_score.round(4),
+                "set_mae":set_mae.round(4),
+                "set_rmse":set_rmse.round(4),
+            }
 
             # Save set scores in lists
             rmses.append(set_rmse)
@@ -224,7 +229,6 @@ class Scoring:
             ),
         }
 
-        html_text(self.scores_dict, self.html_file, font_size="30px")
         print("[✔]")
         return {"Status": Status.SUCCESS, **self.scores_dict}
 
@@ -321,7 +325,7 @@ class Scoring:
 
         return {"Status": Status.SUCCESS}
 
-    def save_figure(self, mu, p16s, p84s, set=0, true_mu=None, result_text=None):
+    def save_figure(self, result_dir):
         """
         Save the figure of the mu distribution.
 
@@ -331,164 +335,21 @@ class Scoring:
             * p84 (array): The 84th percentile.
             * set (int, optional): The set number. Defaults to 0.
         """
-
-        plt.figure(figsize=(5, 4))
-        # plot horizontal lines from p16 to p84
-        for i, (p16, p84) in enumerate(zip(p16s, p84s)):
-            if p16 > p84:
-                p16, p84 = 0, 0
-            if i == 0:
-                plt.hlines(
-                    y=i,
-                    xmin=p16,
-                    xmax=p84,
-                    colors="b",
-                    linewidth=2,
-                    label="Coverage interval",
-                )
-            else:
-                plt.hlines(y=i, xmin=p16, xmax=p84, colors="b")
-        plt.vlines(
-            x=mu,
-            ymin=0,
-            ymax=len(p16s),
-            colors="r",
-            linewidth=2,
-            linestyles="dashed",
-            label="average $\\mu$",
+        visualize_coverage(self.set_results, result_dir)
+        images = []
+        for key in self.set_results :
+            images.append({
+                "title" : key,
+                "file_path" : str(result_dir / f"{key}_coverage.png")
+            })
+        
+        image_gallery_to_html(
+            images,
+            output_file=f"{result_dir}/Coverage_plots.html",
+            file_title=f"Coverage Plots",
         )
-        if true_mu is not None:
-            plt.vlines(
-                x=true_mu,
-                ymin=0,
-                ymax=len(p16s),
-                colors="g",
-                linewidth=2,
-                linestyles="dashed",
-                label="true $\\mu$",
-            )
-
-        plt.xlabel("$\\mu$", fontdict={"size": 14})
-        plt.ylabel("pseudo-experiments", fontdict={"size": 14})
-        plt.xticks(fontsize=14)  # Set the x-tick font size
-        plt.yticks(fontsize=14)  # Set the y-tick font size
-        plt.xlim(min(p16s), max(p84s) + 1)
-        plt.title(f"Set {set}", fontdict={"size": 14})
-        plt.figtext(
-            0.5,
-            -0.3,
-            result_text,
-            wrap=True,
-            horizontalalignment="center",
-            fontsize=10,
-            bbox=dict(facecolor="white", edgecolor="black", boxstyle="round"),
-        )
-        plt.legend(loc="upper left", fontsize=12)
-        plt.tight_layout()
-
-        if result_text is None:
-            result_text = f"Set {set} - $\\mu$ distribution"
-
-        save_plot_to_html(plt, self.html_file, result_text, append=True)
 
         return {"Status": Status.SUCCESS}
-
-
-def html_text(data, html_fle, font_size="20px"):
-
-    bar_html = f"""
-    <div class="table-box">
-        <table>
-            <tr><th>Key</th><th>Value</th></tr>
-            {''.join(f'<tr><td>{key}</td><td>{value}</td></tr>' for key, value in data.items())}
-        </table>
-    </div>
-    """
-    with open(html_fle, "a") as f:
-        f.write(bar_html)
-
-
-def html_table(data, html_fle):
-    # Build HTML
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Dictionary Table</title>
-        <style>
-            .table-box {{
-                width: fit-content;
-                padding: 20px;
-                border: 2px solid #333;
-                border-radius: 10px;
-                background-color: #f9f9f9;
-                margin: 40px auto;
-                font-family: Arial, sans-serif;
-            }}
-            table {{
-                border-collapse: collapse;
-                width: 100%;
-            }}
-            td, th {{
-                border: 1px solid #666;
-                padding: 10px 20px;
-                text-align: left;
-            }}
-            th {{
-                background-color: #ddd;
-            }}
-        </style>
-    </head>
-    <body>
-
-    <div class="table-box">
-        <table>
-            <tr><th>Key</th><th>Value</th></tr>
-            {''.join(f'<tr><td>{key}</td><td>{value}</td></tr>' for key, value in data.items())}
-        </table>
-    </div>
-
-    </body>
-    </html>
-    """
-
-    with open(html_fle, "a") as f:
-        f.write(html_content)
-
-
-def save_plot_to_html(plt, html_file, text, append=False):
-    fig = plt.gcf()  # Get the current figure
-    html_str = mpld3.fig_to_html(fig)
-    formatted_text = text.replace("\n", "<br>")
-    centered_html_str = f"""
-    <div style="border: 2px solid black; padding: 10px;">
-        <div style="display: flex; justify-content: center; align-items: center;">
-            <div style="margin-right: 10px;">{html_str}</div>
-            <div style="border: 1px solid black; padding: 10px; font-size: 20px;">{formatted_text}</div>
-        </div>
-    </div>
-    """
-    if append:
-        with open(html_file, "a") as f:
-            f.write(centered_html_str)
-    else:
-        bar_html = """
-        <div style="background-color: lightgray; padding: 10px; text-align: center; font-size: 36px;">
-            Detailed Results
-        </div>
-        """
-        with open(html_file, "w") as f:
-            f.write(centered_html_str)
-
-
-def html_heading(heading, html_file):
-    heading_html = f"""
-    <div style="background-color: lightgray; padding: 10px; text-align: center; font-size: 20px;">
-        {heading}
-    </div>
-    """
-    with open(html_file, "w") as f:
-        f.write(heading_html)
 
 
 if __name__ == "__main__":

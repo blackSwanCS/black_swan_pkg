@@ -116,26 +116,32 @@ def main():
         help="Path to the main config files",
     )
 
+    parser.add_argument(
+        "--json-path",
+        type=Path,
+        default=Path(working_dir) / "json",
+        help="Path to the main config files",
+    )
+
     args = parser.parse_args()
 
     models_dict = yaml.safe_load(
         (Path(args.config_path) / "models_paths.yaml").read_text()
     )
 
-    if not args.submission:
-        if not args.model_type:
-            submission_dir = Path(models_dict[args.model_type])
-        else:
-            submission_dir = Path(working_dir) / "sample_code_submission"
+    if args.submission:
+        submission_dir = Path(args.submission)
+    elif args.model_type:
+        submission_dir = Path(models_dict[args.model_type])
     else:
-        Path(args.submission)
+        submission_dir = Path(working_dir) / "sample_code_submission"
 
     if args.input is not None:
         data = Data(args.input)
     else:
         data = download_dataset("blackSwan_data")
 
-    output_dir = f"results/plots_{args.unique_date}"
+    output_dir = Path(f"results/plots_{args.unique_date}")
 
     ingestion = Ingestion(data)
 
@@ -169,6 +175,8 @@ def main():
         json.dump(test_settings, f)
 
     initial_entry = get_initial_entry(Path(args.config_path) / "dashboard.yaml")
+    initial_entry["date"] = args.unique_date
+    
     ingestion_duration_file = os.path.join(output_dir, "ingestion_duration.json")
 
     print(initial_entry)
@@ -176,7 +184,7 @@ def main():
     sequencer = Sequencer(
         initial_entry=initial_entry,
         plots_dir=output_dir,
-        json_dir="json",
+        json_dir=args.json_path,
     )
 
     sequencer.update({"Status": "Update table", "model": "Linear Regression"})
@@ -215,7 +223,7 @@ def main():
     # save result
     sequencer.add_algorithm(
         ingestion.save_result,
-        output_dir=str(output_dir),
+        output_dir=output_dir,
     )
 
     # Stop timer
@@ -259,10 +267,11 @@ def main():
         test_settings=test_settings,
     )
 
-    # add scores
     sequencer.add_algorithm(
-        scoring.compute_scores,
+        scoring.save_figure,
+        result_dir=output_dir
     )
+    
 
     # Write scores
     sequencer.add_algorithm(

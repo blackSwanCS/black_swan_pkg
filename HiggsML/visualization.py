@@ -443,7 +443,7 @@ def visualize_scatter(ingestion_result_dict, ground_truth_mus):
     plt.show()
 
 
-def visualize_coverage(ingestion_result_dict, ground_truth_mus):
+def visualize_coverage(ingestion_result_dict,save_dir=None):
     """
     Plots a coverage plot of the mu values.
 
@@ -458,7 +458,7 @@ def visualize_coverage(ingestion_result_dict, ground_truth_mus):
         plt.figure(figsize=(5, 5))
 
         ingestion_result = ingestion_result_dict[key]
-        mu = ground_truth_mus[key]
+        mu = ingestion_result["true_mu"]
         mu_hats = np.mean(ingestion_result["mu_hats"])
         p16s = ingestion_result["p16"]
         p84s = ingestion_result["p84"]
@@ -497,4 +497,8 @@ def visualize_coverage(ingestion_result_dict, ground_truth_mus):
         plt.title(f"$\\mu$ distribution - Set_{key}")
         plt.legend(loc="upper left", bbox_to_anchor=(1, 1))
 
-    plt.show()
+        if save_dir:
+            plt.savefig(save_dir / f"{key}_coverage.png")
+
+        plt.show()
+
