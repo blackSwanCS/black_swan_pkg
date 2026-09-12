@@ -340,7 +340,7 @@ class Scoring:
         for key in self.set_results :
             images.append({
                 "title" : key,
-                "file_path" : str(result_dir / f"{key}_coverage.png")
+                "file_path" : f"{key}_coverage.png"
             })
         
         image_gallery_to_html(
