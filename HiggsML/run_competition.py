@@ -51,7 +51,14 @@ def main():
     parser.add_argument(
         "--input",
         "-i",
+        type=Path,
         help="Input file location",
+        default=None,
+    )
+
+    parser.add_argument(
+        "--input-type",
+        help="Dataset type",
         default=None,
     )
 
@@ -145,8 +152,6 @@ def main():
         (Path(args.config_path) / "models_paths.yaml").read_text()
     )
 
-    print(models_dict)
-
     if args.submission:
         submission_dir = Path(args.submission)
     elif args.model_type:
@@ -156,7 +161,9 @@ def main():
         submission_dir = Path(working_dir) / "sample_code_submission"
         models_type = "Sample Code"
 
-    if args.input is not None:
+    if args.input_type is not None:
+        data = download_dataset(args.input_type)
+    elif args.input is not None:
         data = Data(args.input)
     else:
         data = download_dataset("blackSwan_data")
