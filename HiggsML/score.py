@@ -297,7 +297,7 @@ class Scoring:
             return_coverage = np.mean((mu >= p16) & (mu <= p84))
             return return_coverage
 
-        def f(x, n_tries, max_coverage=1e4, one_sigma=0.6827):
+        def f(x, n_tries, one_sigma=0.6827):
             sigma68 = np.sqrt(((1 - one_sigma) * one_sigma * n_tries)) / n_tries
 
             if x >= one_sigma - 2 * sigma68 and x <= one_sigma + 2 * sigma68:
@@ -339,7 +339,7 @@ class Scoring:
         images = []
         for key in self.set_results :
             images.append({
-                "title" : key,
+                "title" : key.replace("_", " ").title(),
                 "file_path" : f"{key}_coverage.png"
             })
         

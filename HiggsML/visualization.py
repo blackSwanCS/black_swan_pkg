@@ -495,7 +495,7 @@ def visualize_coverage(ingestion_result_dict,save_dir=None):
         plt.xlabel("$\\mu$")
         plt.ylabel("pseudo-experiments")
         plt.title(f"$\\mu$ distribution - Set_{key}")
-        plt.legend(loc="upper left", bbox_to_anchor=(1, 1))
+        plt.legend(loc="upper left")
 
         if save_dir:
             plt.savefig(save_dir / f"{key}_coverage.png")

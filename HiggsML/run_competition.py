@@ -1,18 +1,16 @@
-import sys
 import argparse
-from pathlib import Path
 import os
+import sys
+from pathlib import Path
 import numpy as np
 import json
 import yaml
 
 from analysisweb.sequencer import Sequencer
-from analysisweb.plugin_loader import load_job_plugin
 
-from .ingestion import Ingestion
 from .score import Scoring
 from .datasets import Data, download_dataset
-
+from .ingestion import load_job_plugin
 working_dir = Path(os.getcwd())
 
 
@@ -69,6 +67,13 @@ def main():
         action="store_true",
         help="Whether to use tes systematics",
     )
+
+    parser.add_argument(
+        "--parallel",
+        action="store_true",
+        help="Whether to run pseudo experiments in parallel",
+    )
+
     parser.add_argument(
         "--systematics-jes",
         action="store_true",
@@ -125,16 +130,31 @@ def main():
 
     args = parser.parse_args()
 
+    if args.parallel :
+        print("Running in parallel mode")
+        from .ingestion_parallel import Ingestion
+    else:
+        print("Running in series mode")
+        from .ingestion import Ingestion
+
+    
+    initial_entry = get_initial_entry(Path(args.config_path) / "dashboard.yaml")
+    initial_entry["date"] = args.unique_date
+
     models_dict = yaml.safe_load(
         (Path(args.config_path) / "models_paths.yaml").read_text()
     )
+
+    print(models_dict)
 
     if args.submission:
         submission_dir = Path(args.submission)
     elif args.model_type:
         submission_dir = Path(models_dict[args.model_type])
+        models_type = args.model_type
     else:
         submission_dir = Path(working_dir) / "sample_code_submission"
+        models_type = "Sample Code"
 
     if args.input is not None:
         data = Data(args.input)
@@ -143,12 +163,9 @@ def main():
 
     output_dir = Path(f"results/plots_{args.unique_date}")
 
-    ingestion = Ingestion(data)
 
     # Start timer
-    ingestion.start_timer()
-
-    model = load_job_plugin(submission_dir / "model.py")
+    
 
     test_settings = {}
     test_settings["systematics"] = {
@@ -174,12 +191,13 @@ def main():
     with open(random_settings_file, "w") as f:
         json.dump(test_settings, f)
 
-    initial_entry = get_initial_entry(Path(args.config_path) / "dashboard.yaml")
-    initial_entry["date"] = args.unique_date
+
     
     ingestion_duration_file = os.path.join(output_dir, "ingestion_duration.json")
 
     print(initial_entry)
+
+    ingestion = Ingestion(data)
 
     sequencer = Sequencer(
         initial_entry=initial_entry,
@@ -187,15 +205,17 @@ def main():
         json_dir=args.json_path,
     )
 
-    sequencer.update({"Status": "Update table", "model": "Linear Regression"})
+    sequencer.update({"Status": "Update table", "type": models_type})
 
     sequencer.start()
+
+
+    sequencer.add_algorithm(ingestion.start_timer)
 
     # initialize submission
     sequencer.add_algorithm(
         ingestion.init_submission,
-        model.Model,
-        model_type=args.model_type,
+        submission_dir=submission_dir,
     )
 
     # fit submission
@@ -217,7 +237,7 @@ def main():
 
     # compute result
     sequencer.add_algorithm(
-        ingestion.process_results_dict,
+        ingestion.compute_result,
     )
 
     # save result

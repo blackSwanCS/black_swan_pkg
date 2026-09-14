@@ -2,7 +2,10 @@
 # Imports
 # ------------------------------------------
 import numpy as np
+import importlib.util
 import os
+import sys
+from pathlib import Path
 from datetime import datetime as dt
 import json
 from itertools import product
@@ -10,8 +13,7 @@ import logging
 
 from analysisweb import Status
 
-from .systematics import generate_pseudo_exp_data
-
+from .systematics import systematics, generate_pseudo_exp_data
 
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 
@@ -27,6 +29,34 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_INGESTION_SEED = 31415
 
+
+def load_job_plugin(path):
+    """Load a job plugin module from the specified file path."""
+    path = Path(path).resolve()
+
+    print(f"Loading job plugin from: {path}")
+
+    if str(path.parent) not in sys.path:
+        sys.path.insert(0, str(path.parent))
+
+    module_name = "job_plugin"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Could not load plugin from {path}")
+
+    module = importlib.util.module_from_spec(spec)
+
+    # Required for pickle in this process.
+    sys.modules[module_name] = module
+
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(module_name, None)
+        raise
+
+    return module
 
 # ------------------------------------------
 # Ingestion Class
@@ -132,17 +162,20 @@ class Ingestion:
         self.data.load_train_set(**kwargs)
         return self.data.get_train_set()
 
-    def init_submission(self, Model, **kwargs):
+    def init_submission(self, submission_dir, **kwargs):
         """
         Initialize the submitted model.
 
         Args:
             Model (object): The model class.
         """
-        logger.info("Initializing Submmited Model")
-        from HiggsML.systematics import systematics
+        
+        self.job_plugin_path = submission_dir / "model.py"
+        model = load_job_plugin(self.job_plugin_path)
 
-        self.model = Model(
+        logger.info("Initializing Submmited Model")
+
+        self.model = model.Model(
             get_train_set=self.load_train_set, systematics=systematics, **kwargs
         )
         self.data.delete_train_set()
@@ -215,7 +248,7 @@ class Ingestion:
 
         return {"Status": Status.SUCCESS}
 
-    def process_results_dict(self):
+    def compute_result(self):
         # loop over sets
         for key in self.results_dict.keys():
             set_result = self.results_dict[key]
