@@ -221,6 +221,7 @@ class Scoring:
             "mae": round(np.mean(maes), 4),
             "interval": round(overall_interval, 4),
             "coverage": round(overall_coverage, 4),
+            "total_number_pseudo_exp" : len(all_mus),
             "quantiles_score": round(overall_quantiles_score, 4),
             "ingestion_duration": (
                 round(self.ingestion_duration, 4)

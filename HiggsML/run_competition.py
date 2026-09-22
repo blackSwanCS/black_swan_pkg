@@ -187,6 +187,15 @@ def main():
     test_settings["num_pseudo_experiments"] = args.num_pseudo_experiments
     test_settings["num_of_sets"] = args.num_of_sets
 
+    run_settings = ""
+    for key, val in test_settings["systematics"].items():
+        if val:
+            run_settings += f" {key.replace('_', ' ').upper()} "
+            
+    if run_settings:
+        run_settings= "STAT ONLY"
+    print(run_settings)
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -202,8 +211,6 @@ def main():
     
     ingestion_duration_file = os.path.join(output_dir, "ingestion_duration.json")
 
-    print(initial_entry)
-
     ingestion = Ingestion(data)
 
     sequencer = Sequencer(
@@ -212,7 +219,7 @@ def main():
         json_dir=args.json_path,
     )
 
-    sequencer.update({"Status": "Update table", "type": models_type})
+    sequencer.update({"Status": "Update table", "type": models_type, "run_settings": run_settings})
 
     sequencer.start()
 
