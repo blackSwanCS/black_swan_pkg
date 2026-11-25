@@ -162,7 +162,7 @@ class Ingestion:
         self.data.load_train_set(**kwargs)
         return self.data.get_train_set()
 
-    def init_submission(self, submission_dir, **kwargs):
+    def init_submission(self, submission_dir):
         """
         Initialize the submitted model.
 
