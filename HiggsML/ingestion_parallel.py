@@ -20,6 +20,7 @@ from analysisweb import Status
 from .systematics import systematics, get_bootstrapped_dataset, get_systematics_dataset
 
 from .ingestion import load_job_plugin
+
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 
 
@@ -74,26 +75,36 @@ def _init_worker(using_tensorflow, pickled_model, device_queue, plugin_path):
 
 _model = None
 
-def _generate_pseudo_exp_data(data, set_mu=1, tes=1.0, jes=1.0, soft_met=0.0, ttbar_scale=None, diboson_scale=None, bkg_scale=None, seed=0):
 
+def _generate_pseudo_exp_data(
+    data,
+    set_mu=1,
+    tes=1.0,
+    jes=1.0,
+    soft_met=0.0,
+    ttbar_scale=None,
+    diboson_scale=None,
+    bkg_scale=None,
+    seed=0,
+):
 
-        # get bootstrapped dataset from the original test set
-        pesudo_exp_data = get_bootstrapped_dataset(
-            data,
-            mu=set_mu,
-            ttbar_scale=ttbar_scale,
-            diboson_scale=diboson_scale,
-            bkg_scale=bkg_scale,
-            seed=seed,
-        )
-        test_set = get_systematics_dataset(
-            pesudo_exp_data,
-            tes=tes,
-            jes=jes,
-            soft_met=soft_met,
-        )
+    # get bootstrapped dataset from the original test set
+    pesudo_exp_data = get_bootstrapped_dataset(
+        data,
+        mu=set_mu,
+        ttbar_scale=ttbar_scale,
+        diboson_scale=diboson_scale,
+        bkg_scale=bkg_scale,
+        seed=seed,
+    )
+    test_set = get_systematics_dataset(
+        pesudo_exp_data,
+        tes=tes,
+        jes=jes,
+        soft_met=soft_met,
+    )
 
-        return test_set
+    return test_set
 
 
 # Define a function to process a set of combinations, not an instance method
@@ -116,35 +127,48 @@ def _process_combination(arrays, test_settings, initial_seed, combination):
             random_state = np.random.RandomState(seed)
 
             if dict_systematics["tes"]:
-                tes = np.clip(random_state.normal(loc=1.0, scale=0.01), a_min=0.9, a_max=1.1)
+                tes = np.clip(
+                    random_state.normal(loc=1.0, scale=0.01), a_min=0.9, a_max=1.1
+                )
             else:
                 tes = 1.0
             if dict_systematics["jes"]:
-                jes = np.clip(random_state.normal(loc=1.0, scale=0.01), a_min=0.9, a_max=1.1)
+                jes = np.clip(
+                    random_state.normal(loc=1.0, scale=0.01), a_min=0.9, a_max=1.1
+                )
             else:
                 jes = 1.0
             if dict_systematics["soft_met"]:
-                soft_met = np.clip(random_state.lognormal(mean=0.0, sigma=1.0), a_min=0.0, a_max=5.0)
+                soft_met = np.clip(
+                    random_state.lognormal(mean=0.0, sigma=1.0), a_min=0.0, a_max=5.0
+                )
             else:
                 soft_met = 0.0
 
             if dict_systematics["ttbar_scale"]:
-                ttbar_scale = np.clip(random_state.normal(loc=1.0, scale=0.02), a_min=0.8, a_max=1.2)
+                ttbar_scale = np.clip(
+                    random_state.normal(loc=1.0, scale=0.02), a_min=0.8, a_max=1.2
+                )
             else:
                 ttbar_scale = None
 
             if dict_systematics["diboson_scale"]:
-                diboson_scale = np.clip(random_state.normal(loc=1.0, scale=0.25), a_min=0.0, a_max=2.0)
+                diboson_scale = np.clip(
+                    random_state.normal(loc=1.0, scale=0.25), a_min=0.0, a_max=2.0
+                )
             else:
                 diboson_scale = None
 
             if dict_systematics["bkg_scale"]:
-                bkg_scale = np.clip(random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01)
+                bkg_scale = np.clip(
+                    random_state.normal(loc=1.0, scale=0.001), a_min=0.99, a_max=1.01
+                )
             else:
                 bkg_scale = None
 
             # get bootstrapped dataset from the original test set
-            test_set = _generate_pseudo_exp_data(test_set,
+            test_set = _generate_pseudo_exp_data(
+                test_set,
                 set_mu=set_mu,
                 tes=tes,
                 jes=jes,
@@ -161,7 +185,6 @@ def _process_combination(arrays, test_settings, initial_seed, combination):
             # Call predict method of the model that was passed to the worker
             predicted_dict = _model.predict(test_set)
             predicted_dict["test_set_index"] = test_set_index
-
 
             logger.debug(
                 f"mu_hat: {predicted_dict['mu_hat']} - delta_mu_hat: {predicted_dict['delta_mu_hat']} - p16: {predicted_dict['p16']} - p84: {predicted_dict['p84']}"
@@ -207,7 +230,9 @@ class SharedTestSet:
                     dtype = entry["dtype"]
                     shape = entry["shape"]
 
-                    array = _create_sm_array(self._shared_memory_name(key, name), dtype, shape)
+                    array = _create_sm_array(
+                        self._shared_memory_name(key, name), dtype, shape
+                    )
                     columns[name] = array
                 self._data[key] = pd.DataFrame(columns, copy=False)
                 continue
@@ -230,7 +255,12 @@ class SharedTestSet:
                 value = data_frame[column]
                 size = value.nbytes
 
-                d[column] = _create_sm_array(self._shared_memory_name(dataset_key, column), value.dtype, value.shape, size)
+                d[column] = _create_sm_array(
+                    self._shared_memory_name(dataset_key, column),
+                    value.dtype,
+                    value.shape,
+                    size,
+                )
                 d[column][:] = value
 
             return pd.DataFrame(d, copy=False)
@@ -308,6 +338,7 @@ class Ingestion:
         * compute_result: Compute the ingestion result.
         * save_result: Save the ingestion result to a file.
     """
+
     def __init__(self, data=None):
         """
         Initialize the Ingestion class.
@@ -393,7 +424,7 @@ class Ingestion:
         self.data.load_train_set(**kwargs)
         return self.data.get_train_set()
 
-    def init_submission(self, submission_dir, **kwargs):
+    def init_submission(self, submission_dir):
         """
         Initialize the submitted model.
 
@@ -404,8 +435,19 @@ class Ingestion:
         self.job_plugin_path = submission_dir / "model.py"
         model = load_job_plugin(self.job_plugin_path)
 
+        config_path = submission_dir / "config.json"
+
+        try:
+            with open(config_path) as f:
+                config = json.load(f)
+        except FileNotFoundError:
+            logger.warning(
+                "config.json not found in submission directory. Using default config."
+            )
+            config = {}
+
         self.model = model.Model(
-            get_train_set=self.load_train_set, systematics=systematics, **kwargs
+            get_train_set=self.load_train_set, systematics=systematics, **config
         )
         self.data.delete_train_set()
 
@@ -534,6 +576,7 @@ class Ingestion:
             self.results_dict[key] = ingestion_result_dict
 
         return {"Status": Status.SUCCESS}
+
     def save_result(self, output_dir=None):
         """
         Save the ingestion result to files.

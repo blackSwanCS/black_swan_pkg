@@ -170,14 +170,25 @@ class Ingestion:
             Model (object): The model class.
         """
         
+        logger.info("Initializing Submmited Model")
         self.job_plugin_path = submission_dir / "model.py"
         model = load_job_plugin(self.job_plugin_path)
 
-        logger.info("Initializing Submmited Model")
+        config_path = submission_dir / "config.json"
+
+        try:
+            with open(config_path) as f:
+                config = json.load(f)
+        except FileNotFoundError:
+            logger.warning(
+                "config.json not found in submission directory. Using default config."
+            )
+            config = {}
 
         self.model = model.Model(
-            get_train_set=self.load_train_set, systematics=systematics, **kwargs
+            get_train_set=self.load_train_set, systematics=systematics, **config
         )
+
         self.data.delete_train_set()
 
         return {"Status": Status.SUCCESS}
